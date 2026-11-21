@@ -33,6 +33,7 @@ export function FindingsHoverCard({
   children: React.ReactNode;
 }) {
   const triggerRef = React.useRef<HTMLSpanElement | null>(null);
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
   const closeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pos, setPos] = React.useState<React.CSSProperties | null>(null);
 
@@ -57,17 +58,38 @@ export function FindingsHoverCard({
     closeTimer.current = setTimeout(() => setPos(null), 120);
   };
 
-  // Fixed position goes stale on scroll/resize → just close.
+  // Fixed position goes stale when the PAGE scrolls/resizes → close. Scrolling
+  // inside the card itself must not close it.
+  const isOpen = pos !== null;
   React.useEffect(() => {
-    if (!pos) return;
-    const close = () => setPos(null);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    return () => {
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
+    if (!isOpen) return;
+    const onScroll = (e: Event) => {
+      if (e.target instanceof Node && cardRef.current?.contains(e.target)) return;
+      setPos(null);
     };
-  }, [pos]);
+    const onResize = () => setPos(null);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [isOpen]);
+
+  // Keep the wheel inside the card: at the top/bottom edge (or when the list
+  // doesn't overflow) the browser would chain the scroll to the page. Needs a
+  // non-passive native listener — React's onWheel can't preventDefault.
+  React.useEffect(() => {
+    const el = cardRef.current;
+    if (!isOpen || !el) return;
+    const onWheel = (e: WheelEvent) => {
+      const atTop = el.scrollTop <= 0 && e.deltaY < 0;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1 && e.deltaY > 0;
+      if (atTop || atBottom) e.preventDefault();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [isOpen]);
   React.useEffect(
     () => () => {
       if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -90,6 +112,7 @@ export function FindingsHoverCard({
       {pos &&
         createPortal(
           <div
+            ref={cardRef}
             role="tooltip"
             style={{ ...card, ...pos }}
             onMouseEnter={show}
@@ -189,6 +212,7 @@ const card: React.CSSProperties = {
   width: CARD_WIDTH,
   maxHeight: CARD_MAX_HEIGHT,
   overflowY: "auto",
+  overscrollBehavior: "contain",
   background: "var(--bg-elevated)",
   border: "1px solid var(--border)",
   borderRadius: 8,
