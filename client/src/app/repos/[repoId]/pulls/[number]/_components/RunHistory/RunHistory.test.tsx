@@ -5,9 +5,9 @@
  * and shows the review score ring.
  */
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import type { RunSummary } from "@devdigest/shared";
+import type { RunSummary, FindingRecord } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
 import { RunHistory } from "./RunHistory";
 
@@ -90,5 +90,34 @@ describe("RunHistory — run cost", () => {
   it("a running run shows no cost", () => {
     renderRuns([run({ status: "running", score: null, blockers: null })]);
     expect(screen.queryByText(/tok/)).not.toBeInTheDocument();
+  });
+});
+
+describe("RunHistory — severity icons + hover card", () => {
+  const finding = (o: Partial<FindingRecord>): FindingRecord => ({
+    id: "f1", severity: "WARNING", category: "perf", title: "N+1 query", file: "src/a.ts",
+    start_line: 4, end_line: 6, rationale: "Loop queries per row.", suggestion: null, confidence: 0.86,
+    kind: "finding", trifecta_components: null, evidence: null, review_id: "r1",
+    accepted_at: null, dismissed_at: null, ...o,
+  });
+
+  it("shows per-severity icons instead of the text and lists findings on hover", () => {
+    const findingsByRun = new Map([
+      ["run-1", [finding({}), finding({ id: "f2", severity: "SUGGESTION", title: "Magic number" })]],
+    ]);
+    render(
+      <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
+        <RunHistory runs={[run({ findings_count: 2 })]} onOpenTrace={() => {}} findingsByRun={findingsByRun} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByText("2 finding(s)")).toBeNull();
+    expect(screen.getByLabelText("1 Warning")).toBeInTheDocument();
+    expect(screen.getByLabelText("1 Suggestion")).toBeInTheDocument();
+    expect(screen.queryByText("N+1 query")).toBeNull();
+
+    fireEvent.mouseEnter(screen.getByLabelText("1 Warning"));
+    expect(screen.getByText("2 findings in this run")).toBeInTheDocument();
+    expect(screen.getByText("N+1 query")).toBeInTheDocument();
+    expect(screen.getAllByText("src/a.ts:4-6")).toHaveLength(2);
   });
 });

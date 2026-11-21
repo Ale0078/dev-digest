@@ -1,16 +1,16 @@
-/* FindingsPanel — hide-low-confidence + j/k navigation + FindingCard list,
+/* FindingsPanel — severity counters/filter + hide-low-confidence + j/k navigation + FindingCard list,
    wiring the accept/dismiss action hook (A2). */
 "use client";
 
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Toggle, EmptyState } from "@devdigest/ui";
-import type { FindingRecord } from "@devdigest/shared";
+import type { FindingRecord, Severity } from "@devdigest/shared";
 import { FindingCard } from "../FindingCard";
 import { useFindingAction } from "../../../../../../../lib/hooks/reviews";
-import { KEY_TO_ACTION } from "./constants";
-import { visibleFindings } from "./helpers";
-import { s } from "./styles";
+import { COUNTED_SEVERITIES, KEY_TO_ACTION } from "./constants";
+import { severityCounts, visibleFindings } from "./helpers";
+import { s, sevChip } from "./styles";
 
 export function FindingsPanel({
   findings,
@@ -26,9 +26,19 @@ export function FindingsPanel({
   const t = useTranslations("prReview");
   const action = useFindingAction();
   const [hideLow, setHideLow] = React.useState(false);
+  const [sevFilter, setSevFilter] = React.useState<Severity | null>(null);
   const [focusIdx, setFocusIdx] = React.useState(0);
 
-  const shown = React.useMemo(() => visibleFindings(findings, hideLow), [findings, hideLow]);
+  // Counters follow the confidence toggle so they always match the unfiltered list.
+  const counts = React.useMemo(() => severityCounts(visibleFindings(findings, hideLow)), [findings, hideLow]);
+  const shown = React.useMemo(
+    () => visibleFindings(findings, hideLow, sevFilter),
+    [findings, hideLow, sevFilter],
+  );
+  const toggleSeverity = (sev: Severity) => {
+    setSevFilter((cur) => (cur === sev ? null : sev));
+    setFocusIdx(0);
+  };
 
   // j/k navigation + a/d shortcuts on the focused finding (keyboard).
   React.useEffect(() => {
@@ -48,6 +58,20 @@ export function FindingsPanel({
   return (
     <div>
       <div style={s.toolbar}>
+        <div role="group" aria-label={t("panel.severityFilter")} style={s.sevGroup}>
+          {/* Empty levels are hidden, except the active one so the filter can always be cleared. */}
+          {COUNTED_SEVERITIES.filter((sev) => counts[sev] > 0 || sev === sevFilter).map((sev) => (
+            <button
+              key={sev}
+              type="button"
+              aria-pressed={sevFilter === sev}
+              onClick={() => toggleSeverity(sev)}
+              style={sevChip(sev, sevFilter === null ? "idle" : sevFilter === sev ? "active" : "muted")}
+            >
+              {t(`panel.severityCount.${sev}`, { count: counts[sev] })}
+            </button>
+          ))}
+        </div>
         <div style={s.toggleGroup}>
           {t("panel.hideLowConfidence")}
           <Toggle on={hideLow} onChange={setHideLow} size={16} />
