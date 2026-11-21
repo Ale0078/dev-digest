@@ -17,7 +17,7 @@ function renderBadge(props: RunCostBadgeProps) {
 describe("RunCostBadge", () => {
   it("compact shows the cost only", () => {
     renderBadge({ costUsd: 0.0142 });
-    expect(screen.getByText("$0.014")).toBeInTheDocument();
+    expect(screen.getByText("$0.0142")).toBeInTheDocument();
   });
 
   it("unknown cost renders an em dash, never $0.00", () => {
@@ -28,7 +28,7 @@ describe("RunCostBadge", () => {
 
   it("detailed shows total tokens and cost", () => {
     renderBadge({ costUsd: 0.014, variant: "detailed", tokensIn: 8000, tokensOut: 1119 });
-    expect(screen.getByText("9,119 tok · $0.014")).toBeInTheDocument();
+    expect(screen.getByText("9,119 tok · $0.0140")).toBeInTheDocument();
   });
 
   it("detailed without tokens falls back to the cost only", () => {

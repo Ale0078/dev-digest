@@ -2,11 +2,11 @@
 
 /**
  * USD cost of a run. `null`/`undefined` means "unknown" → "—" (never "$0.00").
- * Sub-dollar values keep 3 decimals so cheap runs stay distinguishable ($0.014).
+ * Sub-dollar values keep 4 decimals so cheap runs stay distinguishable ($0.0142).
  */
 export function formatCost(usd: number | null | undefined): string {
   if (usd == null) return "—";
-  return `$${usd.toFixed(usd < 1 ? 3 : 2)}`;
+  return `$${usd.toFixed(usd < 1 ? 4 : 2)}`;
 }
 
 /** Token in→out summary (e.g. "12k→1.5k"). */

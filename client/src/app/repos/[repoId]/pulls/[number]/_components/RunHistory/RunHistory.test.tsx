@@ -78,7 +78,7 @@ describe("RunHistory — outcome badge", () => {
 describe("RunHistory — run cost", () => {
   it("a done run shows total tokens and cost next to the time", () => {
     renderRuns([run({ status: "done", tokens_in: 8000, tokens_out: 1119, cost_usd: 0.014 })]);
-    expect(screen.getByText("9,119 tok · $0.014")).toBeInTheDocument();
+    expect(screen.getByText("9,119 tok · $0.0140")).toBeInTheDocument();
   });
 
   it("a done run with unknown cost shows an em dash, never $0.00", () => {

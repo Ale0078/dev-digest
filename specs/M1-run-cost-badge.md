@@ -4,8 +4,8 @@ Modules: server, client
 
 ## Goal
 Show what each agent review run costs, and its tokens, in three places:
-1. **PR list**: a `COST` column with a compact value (`$0.014`).
-2. **PR detail → Agent runs timeline**: under the run time, a line like `9,119 tok · $0.014`.
+1. **PR list**: a `COST` column with a compact value (`$0.0142`).
+2. **PR detail → Agent runs timeline**: under the run time, a line like `9,119 tok · $0.0142`.
 3. **Agent run drawer → Stats**: a `COST` tile next to Duration / Tokens / Findings.
 
 ## Non-goals
@@ -37,15 +37,15 @@ reviewer-core `reviewPullRequest()` already returns `ReviewOutcome.costUsd`. It 
 
 ### Client
 - `src/lib/format.ts`: `formatCost(usd)`, `formatTokens(in, out)`, `formatTokenTotal(in, out)`.
-- `src/components/run-cost-badge/RunCostBadge`: variants `compact` (`$0.014`) and `detailed` (`9,119 tok · $0.014`).
+- `src/components/run-cost-badge/RunCostBadge`: variants `compact` (`$0.0142`) and `detailed` (`9,119 tok · $0.0142`).
 - The PR list gets a `cost` column, the timeline row gets a `detailed` badge for done runs, and the drawer gets a `COST` stat.
 
 ### Formatting
 | Value | Output |
 |---|---|
 | `null` / `undefined` | `—` |
-| `0 < usd < 0.01`, or `0` | `$0.001` (3 decimals) |
-| `usd ≥ 0.01` and `< 1` | `$0.014` (3 decimals) |
+| `0 < usd < 0.01`, or `0` | `$0.0012` (4 decimals) |
+| `usd ≥ 0.01` and `< 1` | `$0.0142` (4 decimals) |
 | `usd ≥ 1` | `$1.23` (2 decimals) |
 
 ## Acceptance criteria
