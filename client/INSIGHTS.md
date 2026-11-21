@@ -25,6 +25,9 @@ Supersedes: 2026-11-21 · `position: absolute` popovers get clipped in the PR ta
 ## Tool & Library Notes
 <!-- Dependency, tooling, and CI quirks. -->
 
+### 2026-11-21 · CI `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` (overrides): local pnpm 12 vs CI pnpm 10
+**What:** CI (`.github/workflows/*.yml`) installs with pnpm 10, while a local machine may run pnpm 12. pnpm 12 ignores the `"pnpm": { "overrides" }` field in `package.json`. Regenerating the lockfile with pnpm 12 (commit `67ebc52`) therefore silently dropped the lockfile's `overrides:` section, and with it the security pins. katex went back to 0.16 and postcss to 8.4.31. CI's pnpm 10 still read the overrides from `package.json`, so `pnpm install --frozen-lockfile` failed. **Fix:** keep `overrides` in `client/pnpm-workspace.yaml`, which both versions read, not in `package.json`. Then check the lockfile with both versions: `npx pnpm@10 install --frozen-lockfile --lockfile-only` and `pnpm install --frozen-lockfile`. **Why it matters:** Any lockfile change made with pnpm 12 can break CI, or silently remove the pins. **Where:** `client/pnpm-workspace.yaml`, `client/pnpm-lock.yaml`
+
 ## Recurring Errors & Fixes
 <!-- Exact error text → root cause → fix. -->
 
