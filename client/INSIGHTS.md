@@ -9,6 +9,10 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## What Doesn't Work
 <!-- Dead ends and antipatterns: what was tried, why it failed, what to do instead. -->
 
+### 2026-11-21 · "Close on scroll" for a fixed popover also closes it when the popover itself scrolls
+Supersedes: 2026-11-21 · `position: absolute` popovers get clipped in the PR table and run accordion
+**What:** `window.addEventListener("scroll", close, true)` (capture) also catches scroll events from inside the popover. Wheel scrolling that reaches the card's edge, or a card with nothing to scroll, chains to the page, so the page scrolls instead and the card closes. Fix: ignore scroll events whose `target` is inside the card (`cardRef.contains`). Add a native `wheel` listener with `{ passive: false }` that calls `preventDefault()` at the top or bottom edge; React's `onWheel` is passive and can't. Also set `overscrollBehavior: "contain"` for touch. **Why it matters:** Any portalled popover with its own scroll needs all three, or it is unusable with a mouse wheel. **Where:** `client/src/components/findings-summary/FindingsHoverCard.tsx` (`FindingsHoverCard`)
+
 ### 2026-11-21 · `position: absolute` popovers get clipped in the PR table and run accordion
 **What:** An absolutely positioned hover card inside a PR row was cut off at the table edge. The PR list `tableCard` (`pulls/styles.ts`) and `ReviewRunAccordion`'s root both set `overflow: hidden` to keep their rounded corners. The fix is to portal the card to `document.body` with `position: fixed`, place it from the trigger's `getBoundingClientRect()` (flipping above when there's no room below), close it on scroll and resize, and add a ~120ms close delay so the pointer can cross the gap. **Why it matters:** Any new tooltip, popover, or dropdown in these containers will hit the same clipping. Don't remove `overflow: hidden` from the containers; reuse the portal pattern instead. **Where:** `client/src/components/findings-summary/FindingsHoverCard.tsx` (`FindingsHoverCard`)
 
