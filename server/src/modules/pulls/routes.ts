@@ -129,24 +129,20 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
       }
     }
 
-    // COST per PR = sum of cost_usd over the latest DONE run of each agent, so a
-    // re-run replaces (not adds to) that agent's cost. Same compute-on-read
-    // pattern as the score: one IN-query, newest-first, first seen per
-    // (pr, agent) wins. Null when no counted run has a known cost.
+    // COST per PR = total spend: sum of cost_usd over EVERY run of the PR (all
+    // agents, re-runs included). Same compute-on-read pattern as the score: one
+    // IN-query + JS grouping. Runs with unknown cost (null — failed/cancelled or
+    // pre-M1) are skipped; null when no run has a known cost.
     const costByPr = new Map<string, number>();
     if (prIds.length > 0) {
       const runRows = await container.db
-        .select({ prId: t.agentRuns.prId, agentId: t.agentRuns.agentId, costUsd: t.agentRuns.costUsd })
+        .select({ prId: t.agentRuns.prId, costUsd: t.agentRuns.costUsd })
         .from(t.agentRuns)
-        .where(and(inArray(t.agentRuns.prId, prIds), eq(t.agentRuns.status, 'done')))
-        .orderBy(desc(t.agentRuns.ranAt));
-      const seen = new Set<string>();
+        .where(inArray(t.agentRuns.prId, prIds));
       for (const run of runRows) {
-        if (!run.prId) continue;
-        const key = `${run.prId}:${run.agentId}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        if (run.costUsd != null) costByPr.set(run.prId, (costByPr.get(run.prId) ?? 0) + run.costUsd);
+        if (run.prId && run.costUsd != null) {
+          costByPr.set(run.prId, (costByPr.get(run.prId) ?? 0) + run.costUsd);
+        }
       }
     }
 

@@ -22,7 +22,7 @@ reviewer-core `reviewPullRequest()` already returns `ReviewOutcome.costUsd`. It 
 ### Semantics
 - `cost_usd` is nullable USD. `null` means unknown and renders as `—`, never `$0.00`.
 - A `done` run stores `outcome.costUsd`. `failed` and `cancelled` runs store `null`, the same way tokens are 0 today.
-- The **PR list** cost is the sum of non-null `cost_usd` over the **latest `done` run of each agent** on the PR. It is `null` when no such run has a known cost.
+- The **PR list** cost is the sum of non-null `cost_usd` over **all runs** of the PR (every agent, re-runs included). It is `null` when no run has a known cost.
 
 ### Server
 - DB: `agent_runs.cost_usd double precision NULL`. This is a new migration, `0010_*`. Migration 0009 dropped the old column; that migration is immutable.
@@ -32,7 +32,7 @@ reviewer-core `reviewPullRequest()` already returns `ReviewOutcome.costUsd`. It 
   - `RunStats.cost_usd` is `.nullish()`, because `run_traces.stats` jsonb written before M1 lacks the key. The read path normalises it to `null`.
 - `run-executor.ts` persists `costUsd` in `completeAgentRun` and in the trace `stats`.
 - `GET /pulls/:id/runs` returns `cost_usd` per run.
-- `GET /repos/:id/pulls` computes the aggregate on read, the same way as the latest score.
+- `GET /repos/:id/pulls` computes the aggregate on read, with the same one-query-plus-JS-grouping approach as the latest score.
 - `GET /runs/:id/trace` returns `stats.cost_usd`.
 
 ### Client
@@ -51,7 +51,7 @@ reviewer-core `reviewPullRequest()` already returns `ReviewOutcome.costUsd`. It 
 ## Acceptance criteria
 - [ ] Every completed run shows its cost in the timeline and the drawer.
 - [ ] A run with no data shows `—`, never `$0.00`.
-- [ ] The PR list COST column is the sum of the latest done run per agent. A re-run of the same agent is not double-counted.
+- [ ] The PR list COST column is the total of all runs of the PR, re-runs included.
 - [ ] There are zero additional LLM calls.
 - [ ] The contracts are identical in the server and client copies.
 - [ ] Old traces without `stats.cost_usd` still load.

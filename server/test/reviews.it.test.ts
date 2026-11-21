@@ -212,7 +212,7 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     await app.close();
   });
 
-  it('persists run cost and exposes it on runs, trace, and the PR list (latest run per agent)', async () => {
+  it('persists run cost and exposes it on runs, trace, and the PR list (sum of all runs)', async () => {
     const app = await appWith(REVIEW_FIXTURE);
     const { repo, pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
     const agent = (
@@ -223,7 +223,7 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
       })
     ).json();
 
-    // Two runs of the SAME agent — the PR list must count only the latest.
+    // Two runs of the SAME agent — the PR list must sum both (total PR spend).
     for (let i = 1; i <= 2; i++) {
       await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } });
       await waitForPrRuns(pg.handle.db, pr.id, { expected: i });
@@ -232,6 +232,7 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     const runs = (await app.inject({ method: 'GET', url: `/pulls/${pr.id}/runs` })).json();
     expect(runs).toHaveLength(2);
     const cost = runs[0].cost_usd;
+    const total = runs[0].cost_usd + runs[1].cost_usd;
     // MockLLMProvider reports costUsd per call → a known, positive run cost.
     expect(cost).toBeGreaterThan(0);
 
@@ -240,7 +241,7 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
 
     const pulls = (await app.inject({ method: 'GET', url: `/repos/${repo.id}/pulls` })).json();
     const listed = pulls.find((p: { id: string }) => p.id === pr.id);
-    expect(listed.cost_usd).toBeCloseTo(cost);
+    expect(listed.cost_usd).toBeCloseTo(total);
 
     await app.close();
   });
