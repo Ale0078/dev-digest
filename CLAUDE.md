@@ -30,6 +30,8 @@ tests: Vitest 2 · e2e: agent-browser (no LLM)
   `@devdigest/reviewer-core`); never relative-import into another package.
 - Zod contracts exist in TWO copies — `server/src/vendor/shared` and `client/src/vendor/shared` —
   and they have already drifted. A contract change must be applied to both, then typecheck all packages.
+- Before opening or merging a PR, run the `pr-self-review` skill. A PreToolUse hook (`.claude/settings.json`) blocks
+  `gh pr create` / `gh pr merge` until it records PASS for the current diff. Never bypass it.
 
 ## Do not touch
 - Existing DB migrations are immutable, and applying migrations (`pnpm db:migrate`, `./scripts/dev.sh`

@@ -21,6 +21,9 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## Tool & Library Notes
 <!-- Dependency, tooling, and CI quirks. -->
 
+### 2026-11-24 · The pr-self-review gate hook goes live at once and inspects every Bash command's text
+**What:** `.claude/settings.json` registers `.claude/skills/pr-self-review/scripts/gate.mjs` as a `PreToolUse` hook on `Bash`. It took effect in the same session as soon as the file was written. The first version regex-matched the raw command, so `echo`/heredoc/`node -e` test inputs that only mentioned `&& gh pr merge` were blocked with "no review recorded". The fix is that `gate.mjs` now strips heredoc bodies and quoted strings before matching (`executable`, `GATED`). **Why it matters:** If you change the gate, re-run its case table through `spawnSync` with the JSON passed via `input` (never inline in the command line), and keep both lists of cases: those that must block and those that must pass. The marker hash (`lib.mjs` → `diffState`) covers path and content of every changed or untracked file, so editing the skill's own untracked files also invalidates a recorded verdict. **Where:** `.claude/skills/pr-self-review/scripts/gate.mjs`, `scripts/lib.mjs`
+
 ## Recurring Errors & Fixes
 <!-- Exact error text → root cause → fix. -->
 

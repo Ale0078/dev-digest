@@ -18,6 +18,9 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## Tool & Library Notes
 <!-- Dependency, tooling, and CI quirks. -->
 
+### 2026-11-24 · `dependency-cruiser` is a runtime dep for indexing, not an architecture linter
+**What:** `dependency-cruiser` is listed in `server/package.json` `dependencies`, but its only user is the repo-intel import-graph adapter `DepCruiseGraph` (`src/adapters/depgraph/index.ts`), which analyses the *imported user repos*. There is no `.dependency-cruiser.*` config and no lint script, so nothing checks this repo's own layer boundaries. **Why it matters:** Don't assume layer rules are machine-checked. The `onion-architecture` skill is enforced only by its checklist. To add a real check, write a separate config plus a `lint:arch` script, and don't touch the `DepCruiseGraph` options. **Where:** `src/adapters/depgraph/index.ts` (`DepCruiseGraph`), `.claude/skills/onion-architecture/references.md`
+
 ## Recurring Errors & Fixes
 <!-- Exact error text → root cause → fix. -->
 

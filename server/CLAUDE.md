@@ -45,6 +45,8 @@ Fastify API (:3001): repos/PR import, repo-intel indexing, agents, review runs. 
 
 ## Read when
 - Adding/changing a route or module → read `README.md` (request/DI flow, API map, env).
+- Adding/changing a module, route, service, repository, adapter or `Container` wiring → load the
+  `onion-architecture` skill (layer rules + pre-finish checklist).
 - Touching indexing, repo map, file rank, or callers → read `src/modules/repo-intel/README.md`.
 - Writing tests → read `../TESTING.md`.
 - Making an architectural decision → check `docs/` first; record the decision there.
