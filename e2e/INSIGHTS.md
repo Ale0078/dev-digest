@@ -15,6 +15,9 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## Tool & Library Notes
 <!-- Dependency, tooling, and CI quirks. -->
 
+### 2026-11-26 · agent-browser: `click` takes `xpath=…`, but `wait <selector>` didn't match it; use `wait --fn`
+**What:** In CI, `["click", "xpath=//span[@aria-label='…']//button"]` worked. A following `["wait", "xpath=…//button[@aria-checked='true']"]` still timed out, even though the failure screenshot showed the switch on. `["wait", "--fn", "!!document.querySelector('span[aria-label=\"…\"] button[aria-checked=\"true\"]')"]` passed. **Why it matters:** For state assertions such as aria-checked or a toggle being on, use `wait --fn` with a CSS `querySelector`, not an xpath selector. **Where:** `e2e/specs/08-skills.flow.json` (step "toggle is on")
+
 ## Recurring Errors & Fixes
 <!-- Exact error text → root cause → fix. -->
 
