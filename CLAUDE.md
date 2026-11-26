@@ -36,6 +36,9 @@ tests: Vitest 2 · e2e: agent-browser (no LLM)
   `gh pr create` / `gh pr merge` until it records PASS for the current diff. Never bypass it.
 
 ## Do not touch
+- Never `git commit` or `git push` on your own initiative — not even small fixes, test updates, or
+  INSIGHTS.md entries. Do it only when the user explicitly asks for that commit/push in the current request;
+  otherwise leave changes uncommitted and tell the user what is ready to commit.
 - Existing DB migrations are immutable, and applying migrations (`pnpm db:migrate`, `./scripts/dev.sh`
   in any mode) needs explicit user approval first. Full rules: `server/CLAUDE.md`.
 
