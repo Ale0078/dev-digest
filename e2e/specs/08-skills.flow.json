@@ -38,7 +38,7 @@
     { "cmd": ["open", "{BASE}/skills"], "label": "reload the list" },
     { "cmd": ["wait", "--text", "flaky-test-patterns"], "label": "imported skill card is visible" },
     { "cmd": ["click", "xpath=//span[@aria-label='Enable flaky-test-patterns for all agents']//button"], "label": "enable the imported skill globally" },
-    { "cmd": ["wait", "xpath=//span[@aria-label='Enable flaky-test-patterns for all agents']//button[@aria-checked='true']"], "label": "toggle is on" },
+    { "cmd": ["wait", "--fn", "!!document.querySelector('span[aria-label=\"Enable flaky-test-patterns for all agents\"] button[aria-checked=\"true\"]')"], "label": "toggle is on" },
 
     { "cmd": ["open", "{BASE}/agents"], "label": "load the agents page" },
     { "cmd": ["wait", "--text", "Test Quality Reviewer"], "label": "seeded test-quality agent is visible" },
