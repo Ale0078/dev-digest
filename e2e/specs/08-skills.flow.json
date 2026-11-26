@@ -29,7 +29,7 @@
     { "cmd": ["find", "role", "button", "click", "--name", "Add Skill"], "label": "open the Add Skill menu again" },
     { "cmd": ["find", "text", "Import from file", "click"], "label": "choose Import from file" },
     { "cmd": ["upload", "[data-testid=import-file-input]", "{FIXTURES}/skills/flaky-test-patterns.zip"], "label": "pick the fixture zip" },
-    { "cmd": ["wait", "--text", "Not imported, never executed"], "label": "preview lists ignored files" },
+    { "cmd": ["wait", "--text", "These files from the archive are ignored"], "label": "preview lists ignored files (the section title is CSS-uppercased, so match its hint)" },
     { "cmd": ["wait", "--text", "scripts/run.sh"], "label": "the script is listed as ignored" },
     { "cmd": ["wait", "--text", "someone else's instructions"], "label": "trust banner is shown" },
     { "cmd": ["find", "role", "button", "click", "--name", "Save skill (disabled)"], "label": "save the imported skill" },
