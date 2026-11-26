@@ -115,7 +115,8 @@ export type MemoryItem = z.infer<typeof MemoryItem>;
 export const SkillType = z.enum(['rubric', 'convention', 'security', 'custom']);
 export type SkillType = z.infer<typeof SkillType>;
 
-export const SkillSource = z.enum(['manual', 'imported_url', 'extracted', 'community']);
+// 'imported' = uploaded .md/.zip (M2). 'imported_url' / 'community' stay valid for old rows.
+export const SkillSource = z.enum(['manual', 'imported', 'imported_url', 'extracted', 'community']);
 export type SkillSource = z.infer<typeof SkillSource>;
 
 export const Skill = z.object({
@@ -128,8 +129,54 @@ export const Skill = z.object({
   enabled: z.boolean(),
   version: z.number().int(),
   evidence_files: z.array(z.string()).nullish(),
+  /** Agents with an ENABLED link to this skill. */
+  agent_count: z.number().int(),
+  /** Token count of the rendered skill block (same tokenizer as the trace). */
+  body_tokens: z.number().int(),
+  updated_at: z.string(),
+  /** 30-day card summary; null rates when there is no data. */
+  stats: z.object({
+    pull_rate: z.number().nullable(),
+    accept_rate: z.number().nullable(),
+  }),
 });
 export type Skill = z.infer<typeof Skill>;
+
+/** Full snapshot of a skill at one version. name/description/type/message are
+ *  absent on rows written before M2. */
+export const SkillVersion = z.object({
+  skill_id: z.string(),
+  version: z.number().int(),
+  name: z.string().nullish(),
+  description: z.string().nullish(),
+  type: SkillType.nullish(),
+  body: z.string(),
+  message: z.string().nullish(),
+  created_at: z.string(),
+});
+export type SkillVersion = z.infer<typeof SkillVersion>;
+
+/** Stats tab (30-day window). Attribution is correlational. */
+export const SkillStats = z.object({
+  used_by: z.number().int(),
+  pull_rate: z.number().nullable(),
+  accept_rate: z.number().nullable(),
+  findings_30d: z.number().int(),
+  agents: z.array(z.object({ id: z.string(), name: z.string() })),
+  by_category: z.array(z.object({ category: z.string(), count: z.number().int() })),
+});
+export type SkillStats = z.infer<typeof SkillStats>;
+
+/** Result of parsing an uploaded .md/.zip. Nothing is persisted. */
+export const SkillImportPreview = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: SkillType,
+  body: z.string(),
+  ignored_files: z.array(z.string()),
+  warnings: z.array(z.string()),
+});
+export type SkillImportPreview = z.infer<typeof SkillImportPreview>;
 
 export const CommunitySkill = z.object({
   name: z.string(),
@@ -195,6 +242,7 @@ export const AgentSkillLink = z.object({
   agent_id: z.string(),
   skill_id: z.string(),
   order: z.number().int(),
+  enabled: z.boolean(),
 });
 export type AgentSkillLink = z.infer<typeof AgentSkillLink>;
 

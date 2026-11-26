@@ -184,10 +184,32 @@ export async function saveRunTrace(db: Db, runId: string, trace: RunTrace): Prom
     .onConflictDoUpdate({ target: t.runTraces.runId, set: { trace } });
 }
 
+/** M2 — one row per skill injected into a run, with the version injected. */
+export async function insertRunSkills(
+  db: Db,
+  runId: string,
+  skills: { skillId: string; version: number }[],
+): Promise<void> {
+  if (skills.length === 0) return;
+  await db
+    .insert(t.runSkills)
+    .values(skills.map((s) => ({ runId, skillId: s.skillId, skillVersion: s.version })))
+    .onConflictDoNothing();
+}
+
 export async function getRunTrace(db: Db, runId: string): Promise<RunTrace | undefined> {
   const [row] = await db.select().from(t.runTraces).where(eq(t.runTraces.runId, runId));
   if (!row) return undefined;
   const trace = row.trace as RunTrace;
-  // Traces written before M1 have no stats.cost_usd — normalise to null ("unknown").
-  return { ...trace, stats: { ...trace.stats, cost_usd: trace.stats.cost_usd ?? null } };
+  // The jsonb is never migrated: traces written before M1 lack stats.cost_usd,
+  // before M2 config.skills / prompt_assembly.skills_tokens — normalise to null.
+  return {
+    ...trace,
+    config: { ...trace.config, skills: trace.config.skills ?? null },
+    stats: { ...trace.stats, cost_usd: trace.stats.cost_usd ?? null },
+    prompt_assembly: {
+      ...trace.prompt_assembly,
+      skills_tokens: trace.prompt_assembly.skills_tokens ?? null,
+    },
+  };
 }

@@ -9,6 +9,12 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## What Doesn't Work
 <!-- Dead ends and antipatterns: what was tried, why it failed, what to do instead. -->
 
+### 2026-11-26 · A `draggable` list row swallows clicks on small controls inside it
+**What:** In the agent Skills tab the whole `<li draggable>` was the drag source. A click on the 16px `Checkbox` with a few pixels of mouse movement started an HTML5 drag instead, so the checkbox "sometimes" didn't toggle. jsdom tests can't reproduce it, because `fireEvent.click` never drags. The fix: only the grip `<span draggable>` is the drag source, the `<li>` stays the drop target, and the skill name is passed as the `Checkbox` `label` for a larger hit area. **Why it matters:** For any drag-to-reorder list with controls in its rows, put `draggable` on a handle, never on the row. **Where:** `client/src/app/agents/[id]/_components/AgentEditor/_components/SkillsTab/SkillsTab.tsx`
+
+### 2026-11-26 · RTL `rerender(ui)` drops providers that were wrapped inline as JSX
+**What:** If a helper renders `<NextIntlClientProvider><X/></NextIntlClientProvider>` and the test calls `rerender(<X/>)`, the tree is remounted without the providers and fails with "NextIntlClientProvider context not found". Pass the providers as `render(ui, { wrapper })` instead, as `renderWithIntl` in `src/test/skills-fixtures.tsx` does. **Why it matters:** Use `wrapper` in any test that rerenders. **Where:** `client/src/test/skills-fixtures.tsx`
+
 ### 2026-11-21 · "Close on scroll" for a fixed popover also closes it when the popover itself scrolls
 Supersedes: 2026-11-21 · `position: absolute` popovers get clipped in the PR table and run accordion
 **What:** `window.addEventListener("scroll", close, true)` (capture) also catches scroll events from inside the popover. Wheel scrolling that reaches the card's edge, or a card with nothing to scroll, chains to the page, so the page scrolls instead and the card closes. Fix: ignore scroll events whose `target` is inside the card (`cardRef.contains`). Add a native `wheel` listener with `{ passive: false }` that calls `preventDefault()` at the top or bottom edge; React's `onWheel` is passive and can't. Also set `overscrollBehavior: "contain"` for touch. **Why it matters:** Any portalled popover with its own scroll needs all three, or it is unusable with a mouse wheel. **Where:** `client/src/components/findings-summary/FindingsHoverCard.tsx` (`FindingsHoverCard`)
@@ -24,6 +30,9 @@ Supersedes: 2026-11-21 · `position: absolute` popovers get clipped in the PR ta
 
 ## Tool & Library Notes
 <!-- Dependency, tooling, and CI quirks. -->
+
+### 2026-11-26 · `@devdigest/ui` `Donut` always prints a `$x.xx` legend
+**What:** `Donut` formats every legend value as `valuePrefix + value.toFixed(2)`, so counts show as `3.00`, and the legend can't be switched off. The skill Stats tab puts `Donut` in a fixed-size, `overflow: hidden`, `aria-hidden` wrapper that clips its legend, and renders its own count legend. **Why it matters:** For any non-money donut, reuse that wrapper instead of editing vendor code. **Where:** `client/src/app/skills/[id]/_components/SkillDetail/StatsTab/StatsTab.tsx`
 
 ### 2026-11-21 · CI `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` (overrides): local pnpm 12 vs CI pnpm 10
 **What:** CI (`.github/workflows/*.yml`) installs with pnpm 10, while a local machine may run pnpm 12. pnpm 12 ignores the `"pnpm": { "overrides" }` field in `package.json`. Regenerating the lockfile with pnpm 12 (commit `67ebc52`) therefore silently dropped the lockfile's `overrides:` section, and with it the security pins. katex went back to 0.16 and postcss to 8.4.31. CI's pnpm 10 still read the overrides from `package.json`, so `pnpm install --frozen-lockfile` failed. **Fix:** keep `overrides` in `client/pnpm-workspace.yaml`, which both versions read, not in `package.json`. Then check the lockfile with both versions: `npx pnpm@10 install --frozen-lockfile --lockfile-only` and `pnpm install --frozen-lockfile`. **Why it matters:** Any lockfile change made with pnpm 12 can break CI, or silently remove the pins. **Where:** `client/pnpm-workspace.yaml`, `client/pnpm-lock.yaml`

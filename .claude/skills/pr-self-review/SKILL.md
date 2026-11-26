@@ -1,8 +1,9 @@
 ---
 name: pr-self-review
 description: "Local pre-PR self review for DevDigest: collects every change that would go into the PR (branch vs main + uncommitted + untracked), runs typecheck and related tests for the touched packages, routes each changed file to the repo skills that govern it (UI skills on client/ files, backend architecture skills on server/ files, …) plus a correctness reviewer, runs the reviewers as parallel subagents (re-runs reuse cached results for unchanged inputs), verifies critical findings, and records PASS/BLOCKED with a PR-ready report. Any confirmed, unwaived critical finding blocks `gh pr create` / `gh pr merge` via the PreToolUse gate hook. Use before opening or merging a PR, when the gate hook blocks a `gh pr` command, or when the user asks for a self review, pre-PR check, or 'review my changes'. Not for reviewing someone else's GitHub PR."
+disable-model-invocation: true
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # PR Self Review

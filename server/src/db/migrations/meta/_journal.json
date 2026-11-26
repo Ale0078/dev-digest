@@ -78,6 +78,13 @@
       "when": 1795272030999,
       "tag": "0010_cute_harpoon",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795719221550,
+      "tag": "0011_fluffy_peter_quill",
+      "breakpoints": true
     }
   ]
 }

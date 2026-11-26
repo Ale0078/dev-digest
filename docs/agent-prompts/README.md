@@ -9,6 +9,7 @@ in the DB). The canonical, reviewable copies live next to this file:
 - [`general-reviewer.md`](./general-reviewer.md)
 - [`security-reviewer.md`](./security-reviewer.md)
 - [`performance-reviewer.md`](./performance-reviewer.md)
+- [`test-quality-reviewer.md`](./test-quality-reviewer.md)
 
 > The DB is the source of truth at run time. These files are the human-readable
 > originals — when you change a prompt, edit the file here **and** push it to the
@@ -24,8 +25,18 @@ receives exactly two messages:
 ```
 <your system_prompt>
 
+## Skills              // only when the agent has effective skills (M2)
+### <skill name>
+<skill description>
+
+<skill body>           // one block per enabled skill, in link order
+
 <INJECTION_GUARD>   // appended verbatim to EVERY agent, every run
 ```
+
+Skills are trusted instructions (the imported → disabled → manual enable flow is
+the trust gate), so they live in the system message and are not `<untrusted>`-wrapped.
+With no effective skills the `## Skills` section is absent and the prompt is unchanged.
 
 `INJECTION_GUARD` (`prompt.ts:16`) tells the model that everything inside
 `<untrusted>…</untrusted>` is data, never instructions, and that claims like "test
@@ -33,12 +44,11 @@ fixture / not for production / ignore this" never descope the review. You do not
 need to repeat any of this in your prompt — it is always there.
 
 **User message** = the task and all context, in this order, each untrusted block
-delimiter-wrapped (`prompt.ts:104-122`):
+delimiter-wrapped (`assemblePrompt` in `prompt.ts`):
 
 ```
 <task line, e.g. "Review PR #7 '…'">
 ## PR description        (untrusted, author-controlled, truncated to 4000 chars)
-## Skills / rules        (linked skill bodies)
 ## Relevant memory       (curated memory items)
 ## Repo skeleton         (untrusted, repo-derived)
 ## Project context       (untrusted spec chunks)
