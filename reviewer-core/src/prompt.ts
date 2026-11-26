@@ -39,7 +39,12 @@ const MAX_PR_DESCRIPTION_CHARS = 4000;
 export interface PromptParts {
   /** Agent's system prompt (trusted). */
   system: string;
-  /** Linked skill bodies (trusted-ish; community skills should be sanitized upstream). */
+  /**
+   * Effective skill blocks, already rendered with `renderSkillBlock`, in link
+   * order. Trusted instructions by design (imported skills start disabled and
+   * must be enabled by a human), so they go into the SYSTEM message, not
+   * `<untrusted>`-wrapped.
+   */
   skills?: string[];
   /** Relevant memory items (trusted, curated). */
   memory?: string[];
@@ -72,6 +77,18 @@ export interface PromptParts {
   task?: string;
 }
 
+/** A skill as the reviewing agent receives it. Shared by the server run path
+ *  and (via a mirrored helper) the client Preview tab — keep the format exact. */
+export interface SkillBlockInput {
+  name: string;
+  description: string;
+  body: string;
+}
+
+export function renderSkillBlock(skill: SkillBlockInput): string {
+  return `### ${skill.name}\n${skill.description}\n\n${skill.body}`;
+}
+
 export interface AssembledPrompt {
   messages: ChatMessage[];
   assembly: PromptAssembly;
@@ -80,13 +97,17 @@ export interface AssembledPrompt {
 /**
  * Assemble the messages array + the PromptAssembly record for the run trace.
  * Untrusted blocks (specs, diff) are delimiter-wrapped; the injection guard is
- * appended to the system message.
+ * appended to the system message. Skills sit between the agent prompt and the
+ * guard as `## Skills`; with no skills the system message is unchanged.
  */
 export function assemblePrompt(parts: PromptParts): AssembledPrompt {
-  const system = `${parts.system}\n\n${INJECTION_GUARD}`;
-
   const skillsBlock =
     parts.skills && parts.skills.length > 0 ? parts.skills.join('\n\n') : undefined;
+  const systemMessage = skillsBlock
+    ? `${parts.system}\n\n## Skills\n${skillsBlock}\n\n${INJECTION_GUARD}`
+    : `${parts.system}\n\n${INJECTION_GUARD}`;
+  // The trace keeps skills as their own block, so `assembly.system` omits them.
+  const system = `${parts.system}\n\n${INJECTION_GUARD}`;
   const memoryBlock =
     parts.memory && parts.memory.length > 0
       ? parts.memory.map((m) => `- ${m}`).join('\n')
@@ -106,7 +127,6 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
   if (prDescription) {
     userSections.push(`## PR description\n${wrapUntrusted('pr-description', prDescription)}`);
   }
-  if (skillsBlock) userSections.push(`## Skills / rules\n${skillsBlock}`);
   if (memoryBlock) userSections.push(`## Relevant memory\n${memoryBlock}`);
   if (parts.repoMap && parts.repoMap.trim().length > 0) {
     userSections.push(`## Repo skeleton\n${wrapUntrusted('repo-map', parts.repoMap)}`);
@@ -122,7 +142,7 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
   const user = userSections.join('\n\n');
 
   const messages: ChatMessage[] = [
-    { role: 'system', content: system },
+    { role: 'system', content: systemMessage },
     { role: 'user', content: user },
   ];
 

@@ -34,6 +34,18 @@ export class ExternalServiceError extends AppError {
   }
 }
 
+export class UnsupportedMediaTypeError extends AppError {
+  constructor(message = 'Unsupported media type', details?: unknown) {
+    super('unsupported_media_type', message, 415, details);
+  }
+}
+
+export class PayloadTooLargeError extends AppError {
+  constructor(message = 'Payload too large', details?: unknown) {
+    super('payload_too_large', message, 413, details);
+  }
+}
+
 export class ConfigError extends AppError {
   constructor(message: string, details?: unknown) {
     super('config_error', message, 500, details);

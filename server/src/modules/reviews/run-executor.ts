@@ -1,6 +1,6 @@
 import type { Container } from '../../platform/container.js';
 import type { Provider, Review, RunTrace, UnifiedDiff } from '@devdigest/shared';
-import { reviewPullRequest, countBlockers } from '@devdigest/reviewer-core';
+import { reviewPullRequest, countBlockers, renderSkillBlock } from '@devdigest/reviewer-core';
 import { RunLogger } from '../../platform/run-logger.js';
 import * as schema from '../../db/schema.js';
 import type { AgentRow } from '../../db/rows.js';
@@ -183,6 +183,20 @@ export class ReviewRunExecutor {
 
       const task = taskLine(pull) + rankNote;
 
+      // M2 — effective skills (globally enabled AND enabled on the link), in
+      // link order. None → `skills` is omitted and the prompt is unchanged.
+      const skills = await this.agents.effectiveSkills(agent.id);
+      const skillBlocks = skills.map((s) => renderSkillBlock(s));
+      // Tokens of the `## Skills` body PER PROMPT (assemblePrompt joins with
+      // \n\n); the client multiplies by chunk count for map-reduce.
+      const skillsTokens =
+        skillBlocks.length > 0 ? this.container.tokenizer.count(skillBlocks.join('\n\n')) : null;
+      if (skills.length > 0) {
+        runLog.info(
+          `skills: ${skills.length} attached (${skills.map((s) => `${s.name} v${s.version}`).join(', ')}) · ${skillsTokens} tok`,
+        );
+      }
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -200,6 +214,8 @@ export class ReviewRunExecutor {
         ...(callersDigest ? { callers: callersDigest } : {}),
         // T3 — repo skeleton, same omit-when-empty contract.
         ...(repoMap ? { repoMap } : {}),
+        // M2 — rendered skill blocks, same omit-when-empty contract.
+        ...(skillBlocks.length > 0 ? { skills: skillBlocks } : {}),
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
@@ -253,6 +269,14 @@ export class ReviewRunExecutor {
         error: null,
       });
 
+      // M2 — one run_skills row per injected skill (Stats source). Only DONE
+      // runs get rows: pull_rate divides by done runs, and failed/cancelled
+      // traces carry config.skills = null, so the two stay consistent.
+      await this.repo.insertRunSkills(
+        runId,
+        skills.map((s) => ({ skillId: s.id, version: s.version })),
+      );
+
       const trace: RunTrace = {
         config: {
           agent: agent.name,
@@ -261,6 +285,10 @@ export class ReviewRunExecutor {
           model: agent.model,
           pr: pull.number,
           source: 'local',
+          skills:
+            skills.length > 0
+              ? skills.map((s) => ({ id: s.id, name: s.name, version: s.version }))
+              : null,
         },
         stats: {
           duration_ms: durationMs,
@@ -270,7 +298,7 @@ export class ReviewRunExecutor {
           findings: findingRows.length,
           grounding,
         },
-        prompt_assembly: outcome.assembly,
+        prompt_assembly: { ...outcome.assembly, skills_tokens: skillsTokens },
         tool_calls: outcome.chunks.map((c) => ({
           tool: 'review_file',
           args: c.label,
@@ -422,9 +450,17 @@ export class ReviewRunExecutor {
         model: agent.model,
         pr: pull.number,
         source: 'local',
+        skills: null,
       },
       stats: { duration_ms: durationMs, tokens_in: 0, tokens_out: 0, cost_usd: null, findings: 0, grounding },
-      prompt_assembly: { system: agent.systemPrompt, skills: null, memory: null, specs: null, user: '' },
+      prompt_assembly: {
+        system: agent.systemPrompt,
+        skills: null,
+        skills_tokens: null,
+        memory: null,
+        specs: null,
+        user: '',
+      },
       tool_calls: [],
       raw_output: '',
       memory_pulled: [],

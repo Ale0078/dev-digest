@@ -12,7 +12,7 @@ Deterministic browser e2e for the web app, driven by agent-browser (CDP). No LLM
 - `run.ts` — the runner · `lib/assert.ts` — assertions · `agent-browser.json` — browser config
 
 ## Gotchas
-- Flows assume the seeded demo data (`acme/payments-api`, PR #482, two built-in agents) and that this is the
+- Flows assume the seeded demo data (`acme/payments-api`, PR #482 + #483 (M2 test-quality fixture), four built-in agents incl. Test Quality Reviewer with 3 linked skills) and that this is the
   ONLY repo — run against a fresh, seeded DB (`e2e:hermetic` does this), not your dev DB.
 - Nothing here may call an LLM — flows must stay deterministic.
 - `e2e/specs/` breaks the repo's `specs/` = feature-specs convention on purpose; feature specs for e2e-covered

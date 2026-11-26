@@ -1,0 +1,46 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for StatsTab. */
+export const s = {
+  wrap: { maxWidth: 960 } satisfies CSSProperties,
+  tiles: { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginBottom: 20 } satisfies CSSProperties,
+  tile: {
+    padding: "14px 16px",
+    borderRadius: 10,
+    border: "1px solid var(--border)",
+    background: "var(--bg-elevated)",
+    minHeight: 92,
+  } satisfies CSSProperties,
+  tileLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    marginBottom: 10,
+  } satisfies CSSProperties,
+  tileValue: { fontSize: 22, fontWeight: 700 } satisfies CSSProperties,
+  info: { display: "inline-flex", color: "var(--text-muted)", cursor: "help" } satisfies CSSProperties,
+  columns: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 } satisfies CSSProperties,
+  panel: {
+    padding: "14px 16px",
+    borderRadius: 10,
+    border: "1px solid var(--border)",
+    background: "var(--bg-elevated)",
+  } satisfies CSSProperties,
+  h3: { display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 650, marginBottom: 12 } satisfies CSSProperties,
+  muted: { fontSize: 13, color: "var(--text-muted)" } satisfies CSSProperties,
+  agentRow: { display: "flex", alignItems: "center", gap: 10, padding: "6px 0" } satisfies CSSProperties,
+  agentIcon: { color: "var(--accent)" } satisfies CSSProperties,
+  agentName: { flex: 1, fontSize: 13.5, fontWeight: 500 } satisfies CSSProperties,
+  donutRow: { display: "flex", alignItems: "center", gap: 20 } satisfies CSSProperties,
+  donutClip: (size: number): CSSProperties => ({ width: size, height: size, overflow: "hidden", flexShrink: 0 }),
+  legend: { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8, flex: 1 } satisfies CSSProperties,
+  legendRow: { display: "flex", alignItems: "center", gap: 10, fontSize: 13 } satisfies CSSProperties,
+  swatch: (color: string): CSSProperties => ({ width: 9, height: 9, borderRadius: 2, background: color }),
+  legendLabel: { flex: 1, color: "var(--text-secondary)" } satisfies CSSProperties,
+  legendValue: { fontWeight: 600, color: "var(--text-primary)" } satisfies CSSProperties,
+} as const;

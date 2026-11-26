@@ -1,6 +1,6 @@
 # pr-self-review
 
-**Version:** 1.1.0 · **Scope:** Shared (whole repo) · **Status:** draft, pending human review
+**Version:** 1.2.0 · **Scope:** Shared (whole repo) · **Status:** draft, pending human review
 
 Local self review that runs before a PR is opened. It collects everything the PR would contain and routes each changed
 file to the repo skills that govern it: UI skills run on `client/`, backend architecture skills on `server/`, and
@@ -58,6 +58,7 @@ current content, so staging or committing the reviewed changes keeps it valid. A
 ## Changelog
 | Version | Date | Changes |
 |---|---|---|
+| 1.2.0 | 2026-11-26 | `disable-model-invocation: true`: the skill is user-invoked only (`/pr-self-review`); root `CLAUDE.md` tells the agent to ask the user to run it. Gate hook unchanged |
 | 1.1.0 | 2026-11-24 | Deterministic checks (typecheck and related tests), built-in `correctness` reviewer plus a "behavioural bug = critical" rule, per-reviewer findings cache for incremental re-runs, user-approved waivers, PR-ready report for the PR description |
 | 1.0.0 | 2026-11-24 | Initial version |
 

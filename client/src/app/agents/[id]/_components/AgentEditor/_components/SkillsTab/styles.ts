@@ -1,0 +1,45 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for SkillsTab. */
+export const s = {
+  wrap: { maxWidth: 760 } satisfies CSSProperties,
+  header: { display: "flex", alignItems: "center", gap: 12 } satisfies CSSProperties,
+  h2: { fontSize: 18, fontWeight: 700 } satisfies CSSProperties,
+  counter: { marginLeft: "auto", fontSize: 13, color: "var(--text-secondary)" } satisfies CSSProperties,
+  hint: { fontSize: 13, color: "var(--text-muted)", margin: "6px 0 16px" } satisfies CSSProperties,
+  filter: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "7px 12px",
+    borderRadius: 7,
+    border: "1px solid var(--border)",
+    background: "var(--bg-surface)",
+    marginBottom: 10,
+  } satisfies CSSProperties,
+  filterIcon: { color: "var(--text-muted)" } satisfies CSSProperties,
+  filterInput: {
+    flex: 1,
+    fontSize: 13,
+    background: "transparent",
+    border: "none",
+    outline: "none",
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  list: { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 } satisfies CSSProperties,
+  row: (dragging: boolean, globallyOff: boolean): CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: "1px solid var(--border)",
+    background: dragging ? "var(--bg-hover)" : "var(--bg-elevated)",
+    opacity: globallyOff ? 0.55 : 1,
+  }),
+  handle: { display: "inline-flex", color: "var(--text-muted)", cursor: "grab" } satisfies CSSProperties,
+  check: { flex: 1, minWidth: 0 } satisfies CSSProperties,
+  name: { minWidth: 0, fontSize: 13.5, fontWeight: 500 } satisfies CSSProperties,
+  offHint: { fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" } satisfies CSSProperties,
+  actions: { display: "flex", gap: 10, marginTop: 16 } satisfies CSSProperties,
+} as const;

@@ -24,6 +24,8 @@ export interface BuildTraceInput {
     model: string;
     pr?: number | null;
     source?: 'local' | 'ci';
+    /** M2 — skills injected into the prompt, in order; null when none. */
+    skills?: { id: string; name: string; version: number }[] | null;
   };
   stats: RunStats;
   promptAssembly: PromptAssembly;
@@ -43,9 +45,13 @@ export function buildRunTrace(input: BuildTraceInput): RunTrace {
       model: input.config.model,
       pr: input.config.pr ?? null,
       source: input.config.source ?? 'local',
+      skills: input.config.skills ?? null,
     },
     stats: input.stats,
-    prompt_assembly: input.promptAssembly,
+    prompt_assembly: {
+      ...input.promptAssembly,
+      skills_tokens: input.promptAssembly.skills_tokens ?? null,
+    },
     tool_calls: input.toolCalls,
     raw_output: input.rawOutput,
     memory_pulled: input.memoryPulled,
@@ -58,5 +64,5 @@ export function buildRunTrace(input: BuildTraceInput): RunTrace {
 
 /** An empty prompt-assembly for detectors that don't call an LLM. */
 export function emptyPromptAssembly(system: string, user: string): PromptAssembly {
-  return { system, skills: null, memory: null, specs: null, user };
+  return { system, skills: null, skills_tokens: null, memory: null, specs: null, user };
 }

@@ -19,18 +19,28 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  return send<T>(path, {
+    ...init,
+    headers: {
+      // Only declare a JSON body when one is actually sent — otherwise a
+      // body-less POST/PUT (e.g. tour generate, refresh, reindex) trips
+      // Fastify's "Body cannot be empty when content-type is application/json".
+      ...(init?.body != null ? { "content-type": "application/json" } : {}),
+      ...(init?.headers ?? {}),
+    },
+  });
+}
+
+/** POST a FormData body. No content-type header on purpose: fetch derives
+    `multipart/form-data; boundary=…` from the FormData itself. */
+export async function uploadFetch<T>(path: string, form: FormData): Promise<T> {
+  return send<T>(path, { method: "POST", body: form });
+}
+
+async function send<T>(path: string, init: RequestInit): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
-      ...init,
-      headers: {
-        // Only declare a JSON body when one is actually sent — otherwise a
-        // body-less POST/PUT (e.g. tour generate, refresh, reindex) trips
-        // Fastify's "Body cannot be empty when content-type is application/json".
-        ...(init?.body != null ? { "content-type": "application/json" } : {}),
-        ...(init?.headers ?? {}),
-      },
-    });
+    res = await fetch(`${API_BASE}${path}`, init);
   } catch (e) {
     // network failure / API down → full-screen error candidate
     throw new ApiError(
@@ -71,4 +81,6 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     apiFetch<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => apiFetch<T>(path, { method: "DELETE" }),
+  /** Multipart POST (file upload); same error normalisation as the rest. */
+  upload: <T>(path: string, form: FormData) => uploadFetch<T>(path, form),
 };

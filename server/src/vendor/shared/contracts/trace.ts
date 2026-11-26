@@ -39,6 +39,9 @@ export type ToolCall = z.infer<typeof ToolCall>;
 export const PromptAssembly = z.object({
   system: z.string(),
   skills: z.string().nullish(),
+  /** Tokens of the skills block per prompt (× chunks in map-reduce); absent
+      in traces written before M2 → normalised to null on read. */
+  skills_tokens: z.number().int().nullish(),
   memory: z.string().nullish(),
   specs: z.string().nullish(),
   /** Callers-of-changed-symbols digest (T1.3); null when absent. */
@@ -78,6 +81,10 @@ export const RunTrace = z.object({
     model: z.string(),
     pr: z.number().int().nullish(),
     source: z.enum(['local', 'ci']).default('local'),
+    /** Skills injected into the prompt, in order; null on pre-M2 traces. */
+    skills: z
+      .array(z.object({ id: z.string(), name: z.string(), version: z.number().int() }))
+      .nullish(),
   }),
   stats: RunStats,
   prompt_assembly: PromptAssembly,

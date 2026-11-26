@@ -1,6 +1,23 @@
 import type { LogLine } from "@devdigest/ui";
 import type { RunTrace } from "@devdigest/shared";
 
+export interface SkillsBlockMeta {
+  /** Tokens of the skills block per prompt; null on pre-M2 traces. */
+  tokens: number | null;
+  /** Prompts the block was sent with (map-reduce chunks); shown only when > 1. */
+  chunks: number;
+  skills: { id: string; name: string; version: number }[];
+}
+
+/** Header meta for the Skills prompt block. Old traces lack the M2 fields. */
+export function skillsBlockMeta(trace: RunTrace): SkillsBlockMeta {
+  return {
+    tokens: trace.prompt_assembly.skills_tokens ?? null,
+    chunks: trace.tool_calls.length,
+    skills: trace.config.skills ?? [],
+  };
+}
+
 interface RawEvent {
   t: string;
   kind: string;

@@ -29,8 +29,10 @@ tests: Vitest 2 · e2e: agent-browser (no LLM)
 - Cross-package code is shared only via tsconfig path aliases (`@devdigest/shared`,
   `@devdigest/reviewer-core`); never relative-import into another package.
 - Zod contracts exist in TWO copies — `server/src/vendor/shared` and `client/src/vendor/shared` —
-  and they have already drifted. A contract change must be applied to both, then typecheck all packages.
-- Before opening or merging a PR, run the `pr-self-review` skill. A PreToolUse hook (`.claude/settings.json`) blocks
+  and they are kept identical (`diff -r` must be empty). A contract change must be applied to both, then typecheck
+  all packages.
+- Before opening or merging a PR, ask the user to run `/pr-self-review` (the skill is user-invoked only; don't
+  run it yourself). A PreToolUse hook (`.claude/settings.json`) blocks
   `gh pr create` / `gh pr merge` until it records PASS for the current diff. Never bypass it.
 
 ## Do not touch

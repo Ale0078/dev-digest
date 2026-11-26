@@ -33,10 +33,11 @@ export interface FlowResult {
   steps: StepResult[];
 }
 
-/** Substitute `{BASE}` (and trim a trailing slash on BASE) in every arg. */
-export function resolveArgs(cmd: string[], base: string): string[] {
+/** Substitute `{BASE}` (trailing slash trimmed) and `{FIXTURES}` (absolute
+ *  path of `e2e/fixtures`, for `upload`) in every arg. */
+export function resolveArgs(cmd: string[], base: string, fixtures = ""): string[] {
   const b = base.replace(/\/+$/, "");
-  return cmd.map((a) => a.replaceAll("{BASE}", b));
+  return cmd.map((a) => a.replaceAll("{BASE}", b).replaceAll("{FIXTURES}", fixtures));
 }
 
 export function stdoutContains(stdout: string, needle: string): boolean {

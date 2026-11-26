@@ -179,6 +179,11 @@ export class ReviewRepository {
     return runRepo.saveRunTrace(this.db, runId, trace);
   }
 
+  /** M2 — record the skills injected into a run (the source for skill Stats). */
+  insertRunSkills(runId: string, skills: { skillId: string; version: number }[]): Promise<void> {
+    return runRepo.insertRunSkills(this.db, runId, skills);
+  }
+
   getRunTrace(runId: string): Promise<RunTrace | undefined> {
     return runRepo.getRunTrace(this.db, runId);
   }

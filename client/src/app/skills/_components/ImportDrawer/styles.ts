@@ -1,0 +1,57 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for ImportDrawer. */
+export const s = {
+  footer: { display: "flex", alignItems: "center", gap: 10 } satisfies CSSProperties,
+  spacer: { flex: 1 } satisfies CSSProperties,
+  dropzone: (over: boolean): CSSProperties => ({
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 10,
+    padding: "40px 24px",
+    borderRadius: 10,
+    border: "1.5px dashed " + (over ? "var(--accent)" : "var(--border-strong)"),
+    background: over ? "var(--accent-bg)" : "var(--bg-elevated)",
+    textAlign: "center",
+  }),
+  dropIcon: { color: "var(--text-muted)" } satisfies CSSProperties,
+  dropTitle: { fontSize: 14, fontWeight: 600 } satisfies CSSProperties,
+  dropHint: { fontSize: 12.5, color: "var(--text-muted)" } satisfies CSSProperties,
+  hiddenInput: { display: "none" } satisfies CSSProperties,
+  error: {
+    marginTop: 14,
+    padding: "10px 14px",
+    borderRadius: 8,
+    background: "var(--crit-bg)",
+    color: "var(--crit)",
+    fontSize: 13,
+  } satisfies CSSProperties,
+  sectionTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 12.5,
+    fontWeight: 650,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  warnings: {
+    marginBottom: 16,
+    padding: "10px 14px",
+    borderRadius: 8,
+    border: "1px solid var(--border)",
+    background: "var(--bg-elevated)",
+  } satisfies CSSProperties,
+  ignored: {
+    marginBottom: 20,
+    padding: "10px 14px",
+    borderRadius: 8,
+    border: "1px solid var(--border)",
+    background: "var(--bg-elevated)",
+  } satisfies CSSProperties,
+  ignoredHint: { fontSize: 12, color: "var(--text-muted)", marginTop: 4 } satisfies CSSProperties,
+  list: { margin: "8px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.6 } satisfies CSSProperties,
+  ignoredFile: { fontSize: 12.5, color: "var(--text-muted)", textDecoration: "line-through" } satisfies CSSProperties,
+} as const;

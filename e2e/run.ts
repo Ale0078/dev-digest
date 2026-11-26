@@ -13,8 +13,8 @@
  *   AGENT_BROWSER_BIN  binary name/path (default "agent-browser")
  *   E2E_STEP_TIMEOUT   per-command timeout in ms (default 60000)
  *
- * Specs target read-only seeded data, so nothing here triggers an LLM call or
- * needs an API key. Run order is the lexical order of the spec filenames.
+ * Specs target seeded data (only the last flow, 08-skills, writes — it creates
+ * and imports skills), so nothing here triggers an LLM call or needs an API key. Run order is the lexical order of the spec filenames.
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -35,6 +35,7 @@ const exec = promisify(execFile);
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SPECS_DIR = join(HERE, "specs");
 const RESULTS_DIR = join(HERE, "test-results");
+const FIXTURES_DIR = join(HERE, "fixtures");
 
 const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 const BIN = process.env.AGENT_BROWSER_BIN ?? "agent-browser";
@@ -66,7 +67,7 @@ async function runFlow(file: string, flow: Flow): Promise<FlowResult> {
   const steps: StepResult[] = [];
 
   for (const step of flow.steps) {
-    const args = resolveArgs(step.cmd, BASE);
+    const args = resolveArgs(step.cmd, BASE, FIXTURES_DIR);
     const label = step.label ?? args.join(" ");
     try {
       const stdout = await ab(args);

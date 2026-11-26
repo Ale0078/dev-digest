@@ -10,6 +10,13 @@ import type {
 } from '@devdigest/shared';
 import { AgentsRepository } from './repository.js';
 import { toAgentDto, toAgentVersionDto } from './helpers.js';
+import { NotFoundError, ValidationError } from '../../platform/errors.js';
+
+/** One ordered entry of `POST /agents/:id/skills` (`items` variant). */
+export interface SkillLinkInput {
+  skill_id: string;
+  enabled: boolean;
+}
 
 /**
  * A2 — agents service. Business logic for the Agents tab + Agent Editor.
@@ -138,21 +145,36 @@ export class AgentsService {
   /** Linked skills for an agent as AgentSkillLink[] (ordered). */
   async skillLinks(agentId: string): Promise<AgentSkillLink[]> {
     const links = await this.repo.linkedSkills(agentId);
-    return links.map((l) => ({ agent_id: agentId, skill_id: l.skill.id, order: l.order }));
+    return links.map((l) => ({
+      agent_id: agentId,
+      skill_id: l.skill.id,
+      order: l.order,
+      enabled: l.enabled,
+    }));
   }
 
   /**
-   * Set / reorder the agent's linked skills. If `skillIds` is provided, replaces
-   * the whole set in that order. Returns the resulting ordered links.
+   * Replace the agent's linked skills with `items`, in order (order = index),
+   * each with its per-agent `enabled`. Returns the resulting ordered links;
+   * undefined when the agent isn't in this workspace. Throws NotFoundError when
+   * a skill isn't in the agent's workspace, ValidationError on duplicates.
    */
   async setSkills(
     workspaceId: string,
     agentId: string,
-    skillIds: string[],
+    items: SkillLinkInput[],
   ): Promise<AgentSkillLink[] | undefined> {
     const agent = await this.repo.getById(workspaceId, agentId);
     if (!agent) return undefined;
-    await this.repo.setSkills(agentId, skillIds);
+    if (new Set(items.map((i) => i.skill_id)).size !== items.length) {
+      throw new ValidationError('Each skill may be linked only once');
+    }
+    const ok = await this.repo.setSkills(
+      workspaceId,
+      agentId,
+      items.map((i) => ({ skillId: i.skill_id, enabled: i.enabled })),
+    );
+    if (!ok) throw new NotFoundError('Skill not found');
     return this.skillLinks(agentId);
   }
 
@@ -167,7 +189,8 @@ export class AgentsService {
     if (!agent) return undefined;
     const existing = await this.repo.linkedSkills(agentId);
     const resolvedOrder = order ?? existing.length;
-    await this.repo.linkSkill(agentId, skillId, resolvedOrder);
+    const ok = await this.repo.linkSkill(workspaceId, agentId, skillId, resolvedOrder);
+    if (!ok) throw new NotFoundError('Skill not found');
     return this.skillLinks(agentId);
   }
 

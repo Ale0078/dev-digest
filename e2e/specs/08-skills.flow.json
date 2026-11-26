@@ -1,0 +1,57 @@
+{
+  "name": "Skills: create, edit, import preview, link to an agent, toggle",
+  "description": "M2 skills lab. Creates a skill, edits it (new version with a change note), imports e2e/fixtures/skills/flaky-test-patterns.zip through the preview (scripts/run.sh listed as ignored, saved disabled), enables it globally, links it to the seeded Test Quality Reviewer, and checks the agent card count. Runs LAST: it is the only flow that writes data.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/skills"], "label": "load the skills page" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "skills fetch settles" },
+    { "cmd": ["wait", "--text", "branch-coverage-gate"], "label": "seeded skill card is visible" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Add Skill"], "label": "open the Add Skill menu" },
+    { "cmd": ["find", "text", "Create skill", "click"], "label": "choose Create skill" },
+    { "cmd": ["wait", "--url", "**/skills/new"], "label": "create route reached" },
+    { "cmd": ["find", "label", "Name", "fill", "e2e-null-guard"], "label": "fill name" },
+    { "cmd": ["find", "label", "Description", "fill", "When a PR adds a null check, require a test for the null path."], "label": "fill description" },
+    { "cmd": ["find", "label", "Skill body", "fill", "Flag any new null guard without an asserting test."], "label": "fill body" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Create skill", "--exact"], "label": "create the skill" },
+    { "cmd": ["wait", "--url", "**tab=config**"], "label": "detail of the new skill opens" },
+    { "cmd": ["wait", "--text", "v1"], "label": "new skill is v1" },
+
+    { "cmd": ["find", "label", "Skill body", "fill", "Flag any new null guard or early return without an asserting test."], "label": "edit the body" },
+    { "cmd": ["wait", "--text", "unsaved"], "label": "editor shows the unsaved badge" },
+    { "cmd": ["find", "label", "Change note", "fill", "e2e: cover early returns"], "label": "write a change note" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Save skill"], "label": "save the edit" },
+    { "cmd": ["wait", "--text", "v2"], "label": "content save bumps to v2" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Versions"], "label": "open the Versions tab" },
+    { "cmd": ["wait", "--text", "e2e: cover early returns"], "label": "version message is listed" },
+
+    { "cmd": ["open", "{BASE}/skills"], "label": "back to the skills list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "list settles" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Add Skill"], "label": "open the Add Skill menu again" },
+    { "cmd": ["find", "text", "Import from file", "click"], "label": "choose Import from file" },
+    { "cmd": ["upload", "[data-testid=import-file-input]", "{FIXTURES}/skills/flaky-test-patterns.zip"], "label": "pick the fixture zip" },
+    { "cmd": ["wait", "--text", "Not imported, never executed"], "label": "preview lists ignored files" },
+    { "cmd": ["wait", "--text", "scripts/run.sh"], "label": "the script is listed as ignored" },
+    { "cmd": ["wait", "--text", "someone else's instructions"], "label": "trust banner is shown" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Save skill (disabled)"], "label": "save the imported skill" },
+    { "cmd": ["wait", "--text", "stays disabled until you enable it"], "label": "import saved disabled" },
+
+    { "cmd": ["open", "{BASE}/skills"], "label": "reload the list" },
+    { "cmd": ["wait", "--text", "flaky-test-patterns"], "label": "imported skill card is visible" },
+    { "cmd": ["click", "xpath=//span[@aria-label='Enable flaky-test-patterns for all agents']//button"], "label": "enable the imported skill globally" },
+    { "cmd": ["wait", "xpath=//span[@aria-label='Enable flaky-test-patterns for all agents']//button[@aria-checked='true']"], "label": "toggle is on" },
+
+    { "cmd": ["open", "{BASE}/agents"], "label": "load the agents page" },
+    { "cmd": ["wait", "--text", "Test Quality Reviewer"], "label": "seeded test-quality agent is visible" },
+    { "cmd": ["find", "text", "Test Quality Reviewer", "click"], "label": "open Test Quality Reviewer" },
+    { "cmd": ["wait", "--url", "**/agents/**"], "label": "agent detail reached" },
+    { "cmd": ["eval", "history.replaceState(null, '', location.pathname + '?tab=skills'); location.reload()"], "label": "switch to the Skills tab" },
+    { "cmd": ["wait", "--text", "3 of 5 enabled"], "label": "3 seeded links enabled out of 5 workspace skills" },
+    { "cmd": ["click", "xpath=//li[.//span[normalize-space()='flaky-test-patterns']]//button[@role='checkbox']"], "label": "attach the imported skill" },
+    { "cmd": ["wait", "--text", "4 of 5 enabled"], "label": "counter updates" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Save skills"], "label": "save the agent's skills" },
+    { "cmd": ["wait", "--text", "Skills saved"], "label": "links persisted" },
+
+    { "cmd": ["open", "{BASE}/agents"], "label": "back to the agents list" },
+    { "cmd": ["wait", "--text", "4 skills"], "label": "Test Quality Reviewer card counts 4 enabled skills" }
+  ]
+}
