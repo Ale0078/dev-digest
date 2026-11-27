@@ -48,6 +48,8 @@
       "skillsTokens": "+{tokens} tok",
       "skillsChunks": "× {count} chunks",
       "skillVersion": "{name} v{version}",
+      "intent": "PR intent (dynamic)",
+      "intentTokens": "+{tokens} tok",
       "memory": "Memory (dynamic)",
       "repoMap": "Repo skeleton — repo-intel (dynamic)",
       "specs": "Project context (dynamic)",

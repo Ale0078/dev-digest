@@ -44,6 +44,7 @@ export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
     suggestion: row.suggestion ?? null,
     confidence: row.confidence,
     kind: (row.kind as Finding['kind']) ?? 'finding',
+    scope: (row.scope as Finding['scope']) ?? null,
     trifecta_components: (row.trifectaComponents as Finding['trifecta_components']) ?? null,
     evidence: null,
     review_id: row.reviewId,

@@ -202,14 +202,17 @@ export async function getRunTrace(db: Db, runId: string): Promise<RunTrace | und
   if (!row) return undefined;
   const trace = row.trace as RunTrace;
   // The jsonb is never migrated: traces written before M1 lack stats.cost_usd,
-  // before M2 config.skills / prompt_assembly.skills_tokens — normalise to null.
+  // before M2 config.skills / prompt_assembly.skills_tokens, before M3 config.intent /
+  // prompt_assembly.intent(_tokens) — normalise to null.
   return {
     ...trace,
-    config: { ...trace.config, skills: trace.config.skills ?? null },
+    config: { ...trace.config, skills: trace.config.skills ?? null, intent: trace.config.intent ?? null },
     stats: { ...trace.stats, cost_usd: trace.stats.cost_usd ?? null },
     prompt_assembly: {
       ...trace.prompt_assembly,
       skills_tokens: trace.prompt_assembly.skills_tokens ?? null,
+      intent: trace.prompt_assembly.intent ?? null,
+      intent_tokens: trace.prompt_assembly.intent_tokens ?? null,
     },
   };
 }

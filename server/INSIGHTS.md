@@ -48,11 +48,18 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## Recurring Errors & Fixes
 <!-- Exact error text → root cause → fix. -->
 
+### 2026-11-27 · Fixed: `run-skills.it.test.ts` flake (`run_skills` rows `[]` / "Cannot read properties of undefined (reading 'skills')")
+Supersedes: 2026-11-27 · `run-skills.it.test.ts` failed once… and · `run-skills.it.test.ts` flake recurs (Open Questions)
+**What:** `ReviewRunExecutor.runOneAgent` sets `status: 'done'` (`completeAgentRun`) *before* it writes `run_skills` and `saveRunTrace`. `waitForPrRuns` returned on the status alone, so the test read `run_skills` and the trace mid-write. Fix: `waitForPrRuns` also waits for each terminal run's `run_traces` row (every terminal path — done, failed, cancelled — saves the trace last). After the fix: 5/5 full `.it.test` runs green (was 2 failures in 5). **Why it matters:** Any test that asserts on rows written after `completeAgentRun` must wait for the trace, not the status. The same ordering means a client reacting to a `done` SSE/status can briefly see a run with no trace. **Where:** `server/test/helpers/runs.ts` (`waitForPrRuns`), `server/src/modules/reviews/run-executor.ts` (`runOneAgent`)
+
 ## Session Notes
 <!-- Dated summaries — only for sessions that produced at least one insight above. -->
 
 ## Open Questions
 <!-- Unresolved or unverified — not yet safe to act on. -->
+
+### 2026-11-27 · `run-skills.it.test.ts` flake recurs: 3 of 7 full runs during M3
+**What:** In the M3 session the same test failed in 3 of 7 full `vitest run .it.test` runs, with two different errors: `AssertionError` at `test/run-skills.it.test.ts:176` (`run_skills` rows `[]`) and `TypeError: Cannot read properties of undefined (reading 'skills')` at `:184`. It passed every time it ran alone. M3 added an `await intentService.forReview(...)` before agent runs in `run-executor.ts`; whether that worsens the timing is not established. **Why it matters:** This is no longer a one-off; the test likely reads the trace/run_skills before the run is fully persisted. Fix `waitForPrRuns` (wait for the trace row too) before trusting this suite as a gate. **Where:** `server/test/run-skills.it.test.ts`, `server/test/helpers/runs.ts`
 
 ### 2026-11-27 · `run-skills.it.test.ts` failed once in a full `pnpm exec vitest run`, then passed
 **What:** "injects only effective skills, in link order, and records run_skills + trace fields" failed once while all 34 files ran in parallel. It passed alone and on the next full run. The failure output wasn't captured, so the cause (probably `waitForPrRuns` timing under load) is unconfirmed. **Why it matters:** If it fails again, rerun it alone before you debug your own change, and capture the assertion text. **Where:** `server/test/run-skills.it.test.ts`, `server/test/helpers/runs.ts`

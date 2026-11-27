@@ -22,7 +22,7 @@ import { OpenAIEmbedder } from '../adapters/embedder/openai.js';
 import { OpenRouterProvider } from '@devdigest/reviewer-core';
 import { estimateCost } from '../adapters/llm/pricing.js';
 import { PriceBook } from './price-book.js';
-import { ConfigError } from './errors.js';
+import { ConfigError, NotFoundError } from './errors.js';
 import { AgentsRepository } from '../modules/agents/repository.js';
 import { ReviewRepository } from '../modules/reviews/repository.js';
 import { SkillsRepository } from '../modules/skills/repository.js';
@@ -31,6 +31,13 @@ import type { RepoIntel } from '../modules/repo-intel/types.js';
 import { RepoIntelService } from '../modules/repo-intel/service.js';
 import { type DepGraph, DepCruiseGraph } from '../adapters/depgraph/index.js';
 import { type Tokenizer, TiktokenTokenizer } from '../adapters/tokenizer/index.js';
+import { SafeLinkFetcher } from '../adapters/http/safe-fetch.js';
+import { readContainedFile } from './contained-read.js';
+import { IntentRepository } from '../modules/intent/repository.js';
+import { IntentService } from '../modules/intent/service.js';
+import type { LinkFetcher } from '../modules/intent/types.js';
+import { loadDiff } from '../modules/reviews/diff-loader.js';
+import { resolveFeatureModel } from '../modules/settings/feature-models.js';
 
 /**
  * DI container. One per app instance. Holds config, db, the JobRunner,
@@ -53,6 +60,8 @@ export interface ContainerOverrides {
   /** repo-intel T3 adapters — only the indexer pipeline reads these. */
   depgraph?: DepGraph;
   tokenizer?: Tokenizer;
+  /** Intent layer external-link fetcher — tests inject a mock (never the network). */
+  linkFetcher?: LinkFetcher;
 }
 
 export class Container {
@@ -79,6 +88,8 @@ export class Container {
   private _depgraph?: DepGraph;
   private _tokenizer?: Tokenizer;
   private _priceBook?: PriceBook;
+  private _linkFetcher?: LinkFetcher;
+  private _intentService?: IntentService;
 
   constructor(config: AppConfig, db: Db, private overrides: ContainerOverrides = {}) {
     this.config = config;
@@ -140,6 +151,37 @@ export class Container {
     if (this.overrides.tokenizer) return this.overrides.tokenizer;
     this._tokenizer ??= new TiktokenTokenizer();
     return this._tokenizer;
+  }
+
+  /** SSRF-guarded fetcher for external links in a PR body (intent layer). */
+  get linkFetcher(): LinkFetcher {
+    if (this.overrides.linkFetcher) return this.overrides.linkFetcher;
+    this._linkFetcher ??= new SafeLinkFetcher();
+    return this._linkFetcher;
+  }
+
+  /** Intent layer use cases (classify a PR's intent, read it for a review run). */
+  get intentService(): IntentService {
+    this._intentService ??= new IntentService({
+      store: new IntentRepository(this.db),
+      loadDiff: async (workspaceId, prId) => {
+        const pull = await this.reviewRepo.getPull(workspaceId, prId);
+        if (!pull) throw new NotFoundError('Pull request not found');
+        const repo = await this.reviewRepo.getRepo(pull.repoId);
+        if (!repo) throw new NotFoundError('Repo not found');
+        return loadDiff(this, this.reviewRepo, workspaceId, pull, repo);
+      },
+      github: () => this.github(),
+      readFile: (root, rel) => readContainedFile(root, rel),
+      linkFetcher: this.linkFetcher,
+      linkFetchEnabled: this.config.intentLinkFetch,
+      resolveModel: async (workspaceId) => {
+        const choice = await resolveFeatureModel(this, workspaceId, 'review_intent');
+        return { provider: choice.provider, llm: await this.llm(choice.provider), model: choice.model };
+      },
+      tokenizer: this.tokenizer,
+    });
+    return this._intentService;
   }
 
   /**

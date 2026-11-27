@@ -81,6 +81,18 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
             meta={<SkillsMeta meta={skillsBlockMeta(trace)} />}
           />
         )}
+        {trace.prompt_assembly.intent != null && (
+          <PromptBlock
+            label={t("trace.prompt.intent")}
+            text={trace.prompt_assembly.intent}
+            color={PROMPT_COLORS.intent}
+            meta={
+              trace.prompt_assembly.intent_tokens != null ? (
+                <span>{t("trace.prompt.intentTokens", { tokens: trace.prompt_assembly.intent_tokens })}</span>
+              ) : undefined
+            }
+          />
+        )}
         {trace.prompt_assembly.memory != null && (
           <PromptBlock label={t("trace.prompt.memory")} text={trace.prompt_assembly.memory} color={PROMPT_COLORS.memory} />
         )}

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { IntentConfidence } from './brief.js';
 
 /**
  * Run trace. The ENTIRE trace of one run is persisted as a SINGLE
@@ -51,6 +52,10 @@ export const PromptAssembly = z.object({
   repo_map: z.string().nullish(),
   /** PR author's description/body (truncated); null when absent. */
   pr_description: z.string().nullish(),
+  /** Rendered PR intent block injected into the prompt; null when absent. */
+  intent: z.string().nullish(),
+  /** Tokens of the intent block per prompt (× chunks in map-reduce). */
+  intent_tokens: z.number().int().nullish(),
   user: z.string(),
 });
 export type PromptAssembly = z.infer<typeof PromptAssembly>;
@@ -84,6 +89,16 @@ export const RunTrace = z.object({
     /** Skills injected into the prompt, in order; null on pre-M2 traces. */
     skills: z
       .array(z.object({ id: z.string(), name: z.string(), version: z.number().int() }))
+      .nullish(),
+    /** Intent used for the run; null when none was stored or on pre-M3 traces. */
+    intent: z
+      .object({
+        head_sha: z.string().nullable(),
+        stale: z.boolean(),
+        confidence: IntentConfidence,
+        filter_applied: z.boolean(),
+        scope_dropped: z.number().int(),
+      })
       .nullish(),
   }),
   stats: RunStats,
