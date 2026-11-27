@@ -30,6 +30,7 @@ flowchart TD
   SKILLS["/skills<br/>list + import drawer"] --> SKILL["/skills/:id<br/>config · preview · stats · versions"]
   SKILLS --> SKILLNEW["/skills/new<br/>create"]
   AGENTS["/agents"] --> AGENT["/agents/:id<br/>editor (config · skills)"]
+  CONV["/repos/:repoId/conventions<br/>extract · accept/reject · create skill"]
   SETTINGS["/settings/:section<br/>API keys · models"]
 
   PULLS -->|"GET /repos/:id/pulls · /repos/:id/index-state"| API
@@ -38,6 +39,7 @@ flowchart TD
   SKILL -->|"GET /skills/:id · /versions · /stats<br/>POST /skills/:id/versions/:v/restore"| API
   AGENTS -->|"/agents · /agents/:id · GET/POST /agents/:id/skills"| API
   SETTINGS -->|"/settings · /providers"| API
+  CONV -->|"GET /repos/:id/conventions · POST /extract · PATCH/DELETE /:cid<br/>POST /repos/:id/conventions/skills"| API
 ```
 
 Cross-cutting chrome lives in `src/components/app-shell` (nav, breadcrumbs,

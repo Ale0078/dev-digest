@@ -83,6 +83,7 @@ export class SkillsRepository implements SkillsStore {
           source: input.source,
           body: input.body,
           enabled: input.enabled,
+          evidenceFiles: input.evidenceFiles ?? null,
           version: 1,
         })
         .returning();

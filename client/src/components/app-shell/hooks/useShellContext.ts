@@ -31,9 +31,11 @@ export function useShellContext({ onOpenCommandPalette }: ShellContextOptions): 
   const onSelectRepo = React.useCallback(
     (id: string) => {
       setRepoId(id);
-      router.push(`/repos/${id}/pulls`);
+      // Stay on Conventions when switching repos; every other page lands on the PR list.
+      const section = /^\/repos\/[^/]+\/conventions/.test(pathname) ? "conventions" : "pulls";
+      router.push(`/repos/${id}/${section}`);
     },
-    [setRepoId, router],
+    [setRepoId, router, pathname],
   );
 
   const onAddRepo = React.useCallback(() => router.push("/onboarding"), [router]);
