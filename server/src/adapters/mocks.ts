@@ -33,6 +33,7 @@ import type {
   SecretKey,
 } from '@devdigest/shared';
 import { parseUnifiedDiff } from './git/diff-parser.js';
+import type { FetchedLink, LinkFetcher } from '../modules/intent/types.js';
 
 /**
  * Deterministic MOCK adapters for tests/dev — NO real network. Each mirrors the
@@ -234,6 +235,13 @@ export class MockGitHubClient implements GitHubClient {
     return { number: n, title: `Issue #${n}`, body: 'mock issue', state: 'open' };
   }
 
+  async listClosingIssues(
+    _repo: RepoRef,
+    _n: number,
+  ): Promise<{ owner: string; name: string; number: number }[]> {
+    return [];
+  }
+
   async currentLogin(): Promise<string> {
     return this.opts.login ?? 'mock-user';
   }
@@ -326,5 +334,16 @@ export class MockSecretsProvider implements SecretsProvider {
   constructor(private secrets: Partial<Record<string, string>> = {}) {}
   async get(key: SecretKey): Promise<string | undefined> {
     return this.secrets[key as string];
+  }
+}
+
+/** Link fetcher mock: returns the canned result per URL, `unavailable` otherwise. Never hits the network. */
+export class MockLinkFetcher implements LinkFetcher {
+  readonly calls: string[] = [];
+  constructor(private byUrl: Record<string, FetchedLink> = {}) {}
+
+  async fetch(url: string): Promise<FetchedLink> {
+    this.calls.push(url);
+    return this.byUrl[url] ?? { status: 'unavailable', reason: 'mock: no fixture' };
   }
 }

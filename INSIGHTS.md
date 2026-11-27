@@ -12,6 +12,9 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## Codebase Patterns
 <!-- Conventions and architectural decisions the code alone does not make obvious. -->
 
+### 2026-11-27 · M3 intent was half-built like M2, and the `review_intent` model default was not cheap
+**What:** Before M3, `pr_intent` (0000_init), the `Intent`/`PrIntentRecord` contracts, `ReviewRepository.upsertIntent/getIntent` and the `review_intent` feature-model key all existed, and none were wired. The default model was `openai/gpt-4.1`. `platform/model-router.ts` `routeModel('intent')` is an unused leftover; feature-model settings are the single source. M3 moved the accessors to `modules/intent/repository.ts`, reshaped `Intent` (`intent` → `summary`, + `risk_areas`; the DB column is still `intent`) and set the default to `openrouter/google/gemini-2.5-flash-lite`. The plan is `specs/plans/m3-intent-layer.md`. **Why it matters:** For any roadmap milestone, grep for its name in schema, contracts and `feature-models` first; parts are likely already there. **Where:** `server/src/modules/intent/`, `server/src/vendor/shared/contracts/{brief,platform}.ts`
+
 ### 2026-11-27 · Plans that only touch `.claude/**` cannot go to the `implementer` agent
 **What:** `implementer.md` forbids edits to `.claude/**`, so a plan for new agents or skills comes back BLOCKED from it. The four agents test-writer, architecture-reviewer, plan-verifier and doc-writer were written by the main session after the user approved the plan. Note also that README roadmap M6 has a *product* feature called "Plan Verifier", unrelated to the `plan-verifier` subagent. **Why it matters:** Route `.claude/**` plans to the main session from the start, and say which "plan verifier" you mean. **Where:** `.claude/agents/implementer.md` (Hard rules), `.claude/agents/README.md` ("Which agent or tool when")
 

@@ -25,6 +25,9 @@ Supersedes: 2026-11-21 · `position: absolute` popovers get clipped in the PR ta
 ## Codebase Patterns
 <!-- Conventions and architectural decisions the code alone does not make obvious. -->
 
+### 2026-11-27 · `FEATURE_MODELS` has a hand-written client mirror that `diff -r` of vendor/shared doesn't check
+**What:** `client/src/lib/feature-models.ts` duplicates the `FEATURE_MODELS` registry from `vendor/shared/contracts/platform.ts`, because the client doesn't import runtime values from the vendored copy. M3 changed the `review_intent` default in both. Also, Settings → Models (`SettingsModels.tsx` `setModel`) always saves `provider:'openrouter'`, so any non-OpenRouter default is unreachable after the first pick. **Why it matters:** A default or new feature key changed only in the contracts silently diverges in the UI. Change both files together. **Where:** `client/src/lib/feature-models.ts`, `server/src/vendor/shared/contracts/platform.ts`
+
 ### 2026-11-21 · Per-run finding filters belong in `FindingsPanel` state; accept/dismiss needs no extra wiring
 **What:** `ReviewRunAccordion` mounts one `FindingsPanel` per run, so a filter kept as `useState` in the panel is already scoped to its run. Keep the panel's derived views (counts, filtered list) as `useMemo` over the `findings` prop. `useFindingAction` invalidates `["reviews", prId]`, and the refetch sends new props, so counts stay in sync after accept or dismiss without manual cache patching. **Why it matters:** You don't need a new hook, a query param, or an optimistic update to add a client-side filter or counter. Add pure helpers in `helpers.ts` and test them directly. **Where:** `client/src/app/repos/[repoId]/pulls/[number]/_components/FindingsPanel/` (`visibleFindings`, `severityCounts`), `src/lib/hooks/reviews.ts` (`useFindingAction`)
 

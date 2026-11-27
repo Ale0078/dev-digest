@@ -18,6 +18,7 @@ import RunTraceDrawer from "./_components/RunTraceDrawer";
 import { usePullDetail, usePulls } from "../../../../../lib/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePrReviews, useCancelRun, usePrActiveRuns, usePrRuns, useDeleteRun } from "../../../../../lib/hooks/reviews";
+import { prIntentKey } from "../../../../../lib/hooks/intent";
 import { useActiveRepo, useRepoNotFound } from "../../../../../lib/repo-context";
 import { ApiError } from "../../../../../lib/api";
 import { githubPrUrl } from "../../../../../lib/github-urls";
@@ -55,6 +56,10 @@ export default function PRDetailPage() {
   // just-failed run shows up in "Run history" immediately — no page reload.
   const invalidateRunHistory = () => {
     if (prId) qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
+  };
+  // The scope filter ignores a stale intent, so the card's staleness is re-read when a run settles.
+  const invalidateIntent = () => {
+    if (prId) qc.invalidateQueries({ queryKey: prIntentKey(prId) });
   };
 
   const tab = search.get("tab") ?? "overview";
@@ -134,7 +139,7 @@ export default function PRDetailPage() {
       />
 
       <div style={{ padding: "24px 32px 44px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1080, margin: "0 auto" }}>
-        {tab === "overview" && <OverviewTab prBody={pr.body} />}
+        {tab === "overview" && <OverviewTab prId={prId} prBody={pr.body} />}
 
         {tab === "findings" && (
           <FindingsTab
@@ -156,6 +161,7 @@ export default function PRDetailPage() {
             onRunDone={() => {
               invalidateActiveRuns();
               invalidateRunHistory();
+              invalidateIntent();
               refetchReviews();
             }}
           />

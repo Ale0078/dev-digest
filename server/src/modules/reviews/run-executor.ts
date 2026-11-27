@@ -1,6 +1,11 @@
 import type { Container } from '../../platform/container.js';
 import type { Provider, Review, RunTrace, UnifiedDiff } from '@devdigest/shared';
-import { reviewPullRequest, countBlockers, renderSkillBlock } from '@devdigest/reviewer-core';
+import {
+  reviewPullRequest,
+  countBlockers,
+  renderSkillBlock,
+  renderIntentBlock,
+} from '@devdigest/reviewer-core';
 import { RunLogger } from '../../platform/run-logger.js';
 import * as schema from '../../db/schema.js';
 import type { AgentRow } from '../../db/rows.js';
@@ -16,6 +21,17 @@ export class RunCancelledError extends Error {
     this.name = 'RunCancelledError';
   }
 }
+
+/** The stored PR intent as one review run uses it (read once per `executeRuns`). */
+type RunIntent = {
+  /** Rendered block injected into the prompt. */
+  block: string;
+  /** Scope filter on only for a fresh, non-low-confidence intent. */
+  filter: boolean;
+  headSha: string | null;
+  stale: boolean;
+  confidence: 'high' | 'medium' | 'low';
+};
 
 /** Minimal structured logger (pino-compatible: (obj, msg)) for runtime logs. */
 export type Logger = {
@@ -104,6 +120,10 @@ export class ReviewRunExecutor {
     }
     runLog.info(`Diff ready — ${diff.files.length} changed file(s); starting ${jobs.length} agent run(s)`);
 
+    // M3 — the intent detected earlier by the user ("Detect" button). Read-only: a review run
+    // never classifies. No stored intent → the prompt is byte-identical to the intent-less one.
+    const intent = await this.loadIntent(workspaceId, pull, runLog);
+
     for (const { agent, runId } of jobs) {
       const agentStart = Date.now();
       logger?.info(
@@ -111,7 +131,7 @@ export class ReviewRunExecutor {
         `review: agent "${agent.name}" started (${agent.provider}/${agent.model})`,
       );
       try {
-        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog);
+        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog, intent);
         logger?.info(
           {
             runId,
@@ -134,6 +154,38 @@ export class ReviewRunExecutor {
     }
   }
 
+  /** Load the stored intent and describe how this run uses it in the Live Log. */
+  private async loadIntent(
+    workspaceId: string,
+    pull: PullRow,
+    runLog: RunLogger,
+  ): Promise<RunIntent | undefined> {
+    const stored = await this.container.intentService.forReview(workspaceId, pull.id, runLog);
+    if (!stored) {
+      runLog.info('intent: none detected — review runs without intent');
+      return undefined;
+    }
+    const { record, stale, filter } = stored;
+    const fetched = record.sources.filter((s) => s.status === 'fetched').length;
+    const unavailable = record.sources.filter((s) => s.status === 'unavailable').length;
+    const off = stale
+      ? ', STALE — scope filter off'
+      : record.confidence === 'low'
+        ? ', low confidence — scope filter off'
+        : '';
+    runLog.info(
+      `intent: using stored (${record.model ?? 'unknown model'}, sha ${(record.head_sha ?? 'n/a').slice(0, 7)}, ` +
+        `confidence ${record.confidence}, sources ${fetched} fetched / ${unavailable} unavailable)${off}`,
+    );
+    return {
+      block: renderIntentBlock(record, { stale, confidence: record.confidence }),
+      filter,
+      headSha: record.head_sha,
+      stale,
+      confidence: record.confidence,
+    };
+  }
+
   /** Execute a single agent's review against a PR, streaming progress. */
   private async runOneAgent(
     workspaceId: string,
@@ -143,6 +195,7 @@ export class ReviewRunExecutor {
     agent: AgentRow,
     runId: string,
     parentLog: RunLogger,
+    intent: RunIntent | undefined,
   ): Promise<RunOutcome> {
     const start = Date.now();
     // Narrow the fanned-out pre-work logger to THIS run; the shared diff/intent
@@ -197,10 +250,14 @@ export class ReviewRunExecutor {
         );
       }
 
+      // M3 — tokens of the intent block per prompt (× chunks in map-reduce on the client).
+      const intentTokens = intent ? this.container.tokenizer.count(intent.block) : null;
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
       // above, and persistence + observability below.
+      runLog.tool(`Main review call → ${agent.provider}/${agent.model}`, { call: 'review' });
       const outcome = await reviewPullRequest({
         systemPrompt: agent.systemPrompt,
         model: agent.model,
@@ -219,6 +276,8 @@ export class ReviewRunExecutor {
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
+        // M3 — stored intent; the filter flag is decided here (off for stale / low confidence).
+        ...(intent ? { intent: { block: intent.block, filter: intent.filter } } : {}),
         task,
         sessionId: `${repo.owner}/${repo.name}#${pull.number}:${agent.name}`,
         onEvent: (e) => runLog.event(e.kind, e.msg, e.data),
@@ -227,6 +286,15 @@ export class ReviewRunExecutor {
         },
       });
       const { tokensIn, tokensOut, costUsd, grounding } = outcome;
+      const slotTokens = (text: string | null | undefined) =>
+        text ? this.container.tokenizer.count(text) : 0;
+      const a = outcome.assembly;
+      runLog.info(
+        `Main review call done — prompt tokens by slot: system ${slotTokens(a.system)}, skills ${skillsTokens ?? 0}, ` +
+          `pr_description ${slotTokens(a.pr_description)}, intent ${intentTokens ?? 0}, ` +
+          `repo_map ${slotTokens(a.repo_map)}, callers ${slotTokens(a.callers)}, user ${slotTokens(a.user)} · ` +
+          `actual in ${tokensIn} / out ${tokensOut}`,
+      );
 
       const keptFindings = outcome.review.findings;
 
@@ -289,6 +357,15 @@ export class ReviewRunExecutor {
             skills.length > 0
               ? skills.map((s) => ({ id: s.id, name: s.name, version: s.version }))
               : null,
+          intent: intent
+            ? {
+                head_sha: intent.headSha,
+                stale: intent.stale,
+                confidence: intent.confidence,
+                filter_applied: intent.filter,
+                scope_dropped: outcome.scopeDropped,
+              }
+            : null,
         },
         stats: {
           duration_ms: durationMs,
@@ -298,7 +375,7 @@ export class ReviewRunExecutor {
           findings: findingRows.length,
           grounding,
         },
-        prompt_assembly: { ...outcome.assembly, skills_tokens: skillsTokens },
+        prompt_assembly: { ...outcome.assembly, skills_tokens: skillsTokens, intent_tokens: intentTokens },
         tool_calls: outcome.chunks.map((c) => ({
           tool: 'review_file',
           args: c.label,
@@ -451,12 +528,15 @@ export class ReviewRunExecutor {
         pr: pull.number,
         source: 'local',
         skills: null,
+        intent: null,
       },
       stats: { duration_ms: durationMs, tokens_in: 0, tokens_out: 0, cost_usd: null, findings: 0, grounding },
       prompt_assembly: {
         system: agent.systemPrompt,
         skills: null,
         skills_tokens: null,
+        intent: null,
+        intent_tokens: null,
         memory: null,
         specs: null,
         user: '',

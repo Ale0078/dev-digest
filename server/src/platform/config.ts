@@ -26,6 +26,9 @@ const EnvSchema = z.object({
   // Note: even when on, sections only populate once the repo is indexed; an
   // unindexed repo degrades gracefully. Per-agent override: agents.repo_intel.
   REPO_INTEL_ENABLED: z.string().optional(),
+  // Intent layer: fetch external links found in a PR body (SSRF-guarded). Default ON — set
+  // INTENT_LINK_FETCH=false to never make outbound requests for them.
+  INTENT_LINK_FETCH: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
   // S2 (security hardening) — the API has no authentication, so it
   // binds to loopback by default. Binding anything wider (e.g. 0.0.0.0 inside
@@ -75,6 +78,8 @@ export type AppConfig = {
    * EXACTLY like the ripgrep-only baseline.
    */
   repoIntelEnabled: boolean;
+  /** Whether the intent layer may fetch external links from a PR body. Default true. */
+  intentLinkFetch: boolean;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -104,5 +109,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     webOrigin: `http://localhost:${parsed.WEB_PORT}`,
     embeddingsEnabled: parsed.EMBEDDINGS_ENABLED === 'true',
     repoIntelEnabled: parsed.REPO_INTEL_ENABLED !== 'false',
+    intentLinkFetch: parsed.INTENT_LINK_FETCH !== 'false',
   };
 }

@@ -6,12 +6,48 @@ import { z } from 'zod';
  */
 
 // ---- Intent ----
+export const IntentConfidence = z.enum(['high', 'medium', 'low']);
+export type IntentConfidence = z.infer<typeof IntentConfidence>;
+
 export const Intent = z.object({
-  intent: z.string(),
-  in_scope: z.array(z.string()),
-  out_of_scope: z.array(z.string()),
+  summary: z.string(),
+  in_scope: z.array(z.string()).max(8),
+  out_of_scope: z.array(z.string()).max(8),
+  risk_areas: z.array(z.string()).max(6),
 });
 export type Intent = z.infer<typeof Intent>;
+
+/** LLM output schema of the intent classifier (string lengths are truncated in code). */
+export const IntentClassification = Intent.extend({
+  confidence: IntentConfidence,
+  missing_context: z.array(z.string()).max(6),
+});
+export type IntentClassification = z.infer<typeof IntentClassification>;
+
+export const IntentSourceKind = z.enum([
+  'pr_title',
+  'pr_description',
+  'diff_headers',
+  'linked_issue',
+  'repo_doc',
+  'external_link',
+  'ticket',
+]);
+export type IntentSourceKind = z.infer<typeof IntentSourceKind>;
+
+export const IntentSourceStatus = z.enum(['fetched', 'unavailable', 'skipped']);
+export type IntentSourceStatus = z.infer<typeof IntentSourceStatus>;
+
+/** One input the classifier saw (or could not see), with its availability. */
+export const IntentSource = z.object({
+  kind: IntentSourceKind,
+  ref: z.string(),
+  title: z.string().nullish(),
+  status: IntentSourceStatus,
+  reason: z.string().nullish(),
+  chars: z.number().int(),
+});
+export type IntentSource = z.infer<typeof IntentSource>;
 
 // ---- Blast radius ----
 export const ChangedSymbol = z.object({

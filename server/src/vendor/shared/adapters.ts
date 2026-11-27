@@ -162,6 +162,11 @@ export interface GitHubClient {
   /** The open PR whose head is `branch`, if any (so re-publish reuses it). */
   findOpenPr(repo: RepoRef, branch: string): Promise<{ url: string } | null>;
   getIssue(repo: RepoRef, n: number): Promise<IssueMeta>;
+  /** Issues a PR will close (GitHub `closingIssuesReferences`); empty when none. */
+  listClosingIssues(
+    repo: RepoRef,
+    n: number,
+  ): Promise<{ owner: string; name: string; number: number }[]>;
   /** GET /user — for "posting as @user". */
   currentLogin(): Promise<string>;
 }

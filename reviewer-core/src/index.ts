@@ -21,6 +21,20 @@ export {
   type AssembledPrompt,
 } from './prompt.js';
 
+// Intent layer: classifier prompt + call, injected-block rendering, scope filter.
+export {
+  summarizeDiffForIntent,
+  buildIntentMessages,
+  classifyIntent,
+  renderIntentBlock,
+  INTENT_SYSTEM_PROMPT,
+  type IntentSourceInput,
+  type IntentClassifierInput,
+  type ClassifyIntentArgs,
+  type ClassifyIntentResult,
+} from './intent.js';
+export { applyScopeFilter, isSeriousFinding, type ScopeFilterResult } from './scope-filter.js';
+
 // Citation grounding — the mandatory mechanical gate for diff findings.
 export { groundFindings, groundingSummary, type GroundingResult } from './grounding.js';
 

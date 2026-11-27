@@ -1,5 +1,5 @@
 import * as t from '../../src/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import type { PgFixture } from './pg.js';
 
 /**
@@ -7,7 +7,10 @@ import type { PgFixture } from './pg.js';
  * agent's review is persisted in the background (the client subscribes to SSE).
  * Tests that assert on persisted reviews/findings/traces must first wait for the
  * background runs to finish. This polls `agent_runs` until every row for the PR
- * reaches a terminal status (done / failed / cancelled).
+ * reaches a terminal status (done / failed / cancelled) AND has its `run_traces` row.
+ * The executor sets the terminal status before it writes `run_skills` and the trace
+ * (`run-executor.ts`: `completeAgentRun` → `insertRunSkills` → `saveRunTrace`), so a
+ * status-only wait races those writes. Every terminal path saves a trace last.
  */
 const TERMINAL = new Set(['done', 'failed', 'cancelled']);
 
@@ -20,7 +23,18 @@ export async function waitForPrRuns(
   const start = Date.now();
   for (;;) {
     const runs = await db.select().from(t.agentRuns).where(eq(t.agentRuns.prId, prId));
-    const terminal = runs.filter((r) => TERMINAL.has(r.status ?? ''));
+    const settled = runs.filter((r) => TERMINAL.has(r.status ?? ''));
+    const traced = settled.length
+      ? new Set(
+          (
+            await db
+              .select({ runId: t.runTraces.runId })
+              .from(t.runTraces)
+              .where(inArray(t.runTraces.runId, settled.map((r) => r.id)))
+          ).map((r) => r.runId),
+        )
+      : new Set<string>();
+    const terminal = settled.filter((r) => traced.has(r.id));
     // With an explicit `expected`, wait until that many runs finish (ignores any
     // extra rows, e.g. a trifecta scan). Otherwise wait for all rows to settle.
     const done =

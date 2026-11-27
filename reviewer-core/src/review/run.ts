@@ -9,6 +9,7 @@ import type {
 import { Review as ReviewSchema } from '@devdigest/shared';
 import { assemblePrompt } from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
+import { applyScopeFilter } from '../scope-filter.js';
 import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
 
 /**
@@ -71,6 +72,12 @@ export interface ReviewInput {
   /** PR author's description/body (untrusted; truncated + delimiter-wrapped in
       the prompt). Empty/undefined → section omitted. */
   prDescription?: string;
+  /**
+   * Stored PR intent (already rendered). `block` is injected as untrusted `## PR intent`; when
+   * `filter` is true, out-of-scope findings are dropped after grounding (one serious one is kept).
+   * The caller decides `filter` (off for stale / low-confidence intent). Undefined → no change.
+   */
+  intent?: { block: string; filter: boolean };
   /** Task framing line, e.g. "Review PR #482 …". */
   task?: string;
   /** Override the structured-output retry budget. */
@@ -103,6 +110,8 @@ export interface ReviewOutcome {
   mode: ReviewMode;
   /** Prompt assembly (for the run trace). Single-pass: the one call; map-reduce: the whole-diff assembly. */
   assembly: PromptAssembly;
+  /** Findings removed by the scope filter (out-of-scope + collapsed); 0 when the filter is off. */
+  scopeDropped: number;
   /** Per-chunk labels (for the run trace's tool_calls). */
   chunks: { label: string }[];
   tokensIn: number;
@@ -135,6 +144,7 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
     callers: input.callers,
     repoMap: input.repoMap,
     prDescription: input.prDescription,
+    intent: input.intent?.block,
     task: input.task,
   };
 
@@ -201,13 +211,26 @@ export async function reviewPullRequest(input: ReviewInput): Promise<ReviewOutco
   }
   emit('result', `Citation grounding: ${grounding}`);
 
+  // Scope filter (only with a fresh, confident intent): after grounding and after reduce, so it is
+  // global across chunks. Serious out-of-scope findings are never all dropped.
+  let kept = ground.kept;
+  let scopeDropped = 0;
+  if (input.intent?.filter) {
+    const sf = applyScopeFilter(kept);
+    kept = sf.kept;
+    scopeDropped = sf.dropped.length;
+    for (const d of sf.dropped) emit('info', `scope filter dropped "${d.finding.title}": ${d.reason}`);
+    emit('result', `Scope filter: ${scopeDropped} dropped, ${kept.length} kept`);
+  }
+
   // Score is derived from the findings that SURVIVED grounding (not the model's
   // self-reported number, and not the pre-grounding set) so the score, the
   // findings list, and the deterministic event always agree.
   return {
-    review: { ...merged, findings: ground.kept, score: scoreFromFindings(ground.kept) },
+    review: { ...merged, findings: kept, score: scoreFromFindings(kept) },
     grounding,
     dropped: ground.dropped,
+    scopeDropped,
     mode,
     assembly,
     chunks: chunks.map((c) => ({ label: c.label })),

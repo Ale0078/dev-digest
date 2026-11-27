@@ -1,0 +1,39 @@
+{
+  "title": "PR intent",
+  "detect": "Detect intent",
+  "redetect": "Re-detect",
+  "detecting": "Detecting…",
+  "retry": "Retry",
+  "emptyTitle": "Intent not detected yet",
+  "emptyBody": "Detect what this PR is meant to do, so reviews can judge findings against it.",
+  "loadFailed": "Couldn't load the PR intent.",
+  "detectFailed": "Intent detection failed.",
+  "inScope": "In scope",
+  "outOfScope": "Out of scope",
+  "riskAreas": "Risk areas",
+  "noneListed": "None listed",
+  "sources": "Sources",
+  "missingContextTitle": "Missing context",
+  "missingContext": "{count, plural, one {# missing context item} other {# missing context items}}",
+  "confidence": "Confidence: {level}",
+  "stale": "Stale · classified at {sha}",
+  "level": {
+    "high": "high",
+    "medium": "medium",
+    "low": "low"
+  },
+  "status": {
+    "fetched": "fetched",
+    "unavailable": "unavailable",
+    "skipped": "skipped"
+  },
+  "kind": {
+    "pr_title": "PR title",
+    "pr_description": "PR description",
+    "diff_headers": "Changed files",
+    "linked_issue": "Linked issue",
+    "repo_doc": "Repo document",
+    "external_link": "External link",
+    "ticket": "Ticket"
+  }
+}

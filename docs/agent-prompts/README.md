@@ -31,6 +31,8 @@ receives exactly two messages:
 
 <skill body>           // one block per enabled skill, in link order
 
+<SCOPE_RULES>       // only when a PR intent is injected (M3): tag each finding in_scope / out_of_scope
+
 <INJECTION_GUARD>   // appended verbatim to EVERY agent, every run
 ```
 
@@ -49,12 +51,29 @@ delimiter-wrapped (`assemblePrompt` in `prompt.ts`):
 ```
 <task line, e.g. "Review PR #7 '…'">
 ## PR description        (untrusted, author-controlled, truncated to 4000 chars)
+## PR intent             (untrusted `pr-intent`; only when the user detected an intent for this PR, M3)
 ## Relevant memory       (curated memory items)
 ## Repo skeleton         (untrusted, repo-derived)
 ## Project context       (untrusted spec chunks)
 ## Callers of changed symbols  (untrusted, repo-derived)
 ## Diff to review        (untrusted)
 ```
+
+### PR intent and the scope filter (M3)
+
+The intent is a structured summary (summary, in/out of scope, risk areas) produced by a separate
+cheap call that the user triggers with **Detect** on the PR Overview (never during a review run).
+A review only *reads* the stored intent. When one exists, `assemblePrompt` adds the `## PR intent`
+section and a trusted `SCOPE_RULES` paragraph (system message, before `INJECTION_GUARD`) asking the
+model to set `scope: "in_scope" | "out_of_scope"` on every finding and to always report serious
+defects. The intent is re-injected as untrusted data, so it can inform a finding but never waives one.
+
+After grounding, `applyScopeFilter` (`reviewer-core/src/scope-filter.ts`) runs deterministically:
+out-of-scope findings are dropped, except that exactly one *serious* out-of-scope finding
+(`severity === 'CRITICAL'` or `category === 'security'`; picked by severity, confidence, file, line,
+title) is kept with a note appended to its rationale. The filter is off (tags are kept, nothing is
+dropped) when the intent is stale (the PR head moved since detection) or its confidence is `low`.
+With no stored intent the prompt is byte-identical to the one without this feature.
 
 Sections with no content are omitted. Everything repo- or author-derived is wrapped
 in `<untrusted source="…">…</untrusted>` so the model can tell instructions

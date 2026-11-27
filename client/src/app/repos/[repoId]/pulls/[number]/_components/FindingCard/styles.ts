@@ -48,6 +48,14 @@ export const s = {
     fontWeight: 600,
     color: "var(--text-muted)",
   } satisfies CSSProperties,
+  outOfScopeTag: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--warn)",
+    background: "var(--warn-bg)",
+    borderRadius: 5,
+    padding: "1px 8px",
+  } satisfies CSSProperties,
   metaRow: {
     display: "flex",
     alignItems: "center",
