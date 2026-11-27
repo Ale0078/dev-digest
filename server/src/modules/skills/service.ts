@@ -35,9 +35,11 @@ export interface CreateSkillInput {
   description: string;
   type: SkillType;
   body: string;
-  source: Extract<SkillSource, 'manual' | 'imported'>;
+  source: Extract<SkillSource, 'manual' | 'imported' | 'extracted'>;
   enabled?: boolean;
   message?: string;
+  /** Repo files the skill was derived from (conventions extractor). */
+  evidenceFiles?: string[];
 }
 
 export interface UpdateSkillInput extends SkillEdit {
@@ -87,6 +89,7 @@ export class SkillsService {
       source: input.source,
       enabled,
       message: input.message ?? null,
+      evidenceFiles: input.evidenceFiles ?? null,
     });
     return this.toDto(workspaceId, r);
   }

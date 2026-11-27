@@ -39,6 +39,7 @@ export interface NewSkill extends SkillContent {
   source: SkillSource;
   enabled: boolean;
   message: string | null;
+  evidenceFiles?: string[] | null;
 }
 
 export interface SkillEdit extends Partial<SkillContent> {

@@ -31,6 +31,9 @@ Supersedes: 2026-11-21 · `position: absolute` popovers get clipped in the PR ta
 ## Tool & Library Notes
 <!-- Dependency, tooling, and CI quirks. -->
 
+### 2026-11-27 · `@devdigest/ui` `Textarea` and `Toggle` drop `aria-*` props; `Pencil` is not an `IconName`
+**What:** `TextInput` spreads `...rest` onto its `<input>`, so `aria-label` works. `Textarea` (`vendor/ui/kit/Textarea.tsx`) and `Toggle` destructure only their own props, so an `aria-label` passed to them is silently dropped. The type checker doesn't complain about `Toggle`, and tests can't find the control by label. The workaround, without editing vendor code: wrap the control in `<div role="group" aria-label=…>` and query `within(getByRole("group", {name})).getByRole("textbox")`. Also, lucide's `Pencil` is exported only under the alias `Edit` (`icons.tsx`), so `icon="Pencil"` fails typecheck. **Why it matters:** These surprises come up in any form or test that uses these kit controls. **Where:** `client/src/app/repos/[repoId]/conventions/_components/ConventionCard/ConventionCard.tsx`
+
 ### 2026-11-26 · `@devdigest/ui` `Donut` always prints a `$x.xx` legend
 **What:** `Donut` formats every legend value as `valuePrefix + value.toFixed(2)`, so counts show as `3.00`, and the legend can't be switched off. The skill Stats tab puts `Donut` in a fixed-size, `overflow: hidden`, `aria-hidden` wrapper that clips its legend, and renders its own count legend. **Why it matters:** For any non-money donut, reuse that wrapper instead of editing vendor code. **Where:** `client/src/app/skills/[id]/_components/SkillDetail/StatsTab/StatsTab.tsx`
 

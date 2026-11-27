@@ -195,8 +195,23 @@ export const ConventionCandidate = z.object({
   evidence_snippet: z.string(),
   confidence: z.number().min(0).max(1),
   accepted: z.boolean(),
+  /** 1-based line range of the snippet in `evidence_path`, located by code on read;
+   *  null when the file changed and the snippet is no longer found. */
+  evidence_line_start: z.number().int().nullable(),
+  evidence_line_end: z.number().int().nullable(),
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
+
+/** Result of one extraction run (`POST /repos/:id/conventions/extract`). */
+export const ConventionExtractResult = z.object({
+  /** Every candidate of the repo after the run (accepted ones kept). */
+  candidates: z.array(ConventionCandidate),
+  /** Files sent to the model (ranked samples + config files). */
+  sample_count: z.number().int(),
+  /** Model candidates dropped by code because their evidence was not found. */
+  dropped_count: z.number().int(),
+});
+export type ConventionExtractResult = z.infer<typeof ConventionExtractResult>;
 
 // ---- Agents ----
 // 'openrouter' routes through the OpenAI-compatible API (OpenAIProvider with a
