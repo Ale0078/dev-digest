@@ -31,6 +31,9 @@ Supersedes: 2026-11-21 · `position: absolute` popovers get clipped in the PR ta
 ## Tool & Library Notes
 <!-- Dependency, tooling, and CI quirks. -->
 
+### 2026-11-27 · The `react-testing-library` skill assumes MSW and `userEvent`; this client has neither
+**What:** `client/package.json` has only `@testing-library/jest-dom` and `@testing-library/react`. The existing tests use `fireEvent` and `vi.mock` of `src/lib/hooks/*`. The skill's mocking and anti-pattern sections recommend MSW and `@testing-library/user-event`. **Why it matters:** Follow the repo idiom when writing tests. Adding those deps is a separate decision for the user, not something to slip into a test change (the `test-writer` agent forbids it). **Where:** `client/package.json`, `.claude/skills/react-testing-library/SKILL.md`
+
 ### 2026-11-27 · `@devdigest/ui` `Textarea` and `Toggle` drop `aria-*` props; `Pencil` is not an `IconName`
 **What:** `TextInput` spreads `...rest` onto its `<input>`, so `aria-label` works. `Textarea` (`vendor/ui/kit/Textarea.tsx`) and `Toggle` destructure only their own props, so an `aria-label` passed to them is silently dropped. The type checker doesn't complain about `Toggle`, and tests can't find the control by label. The workaround, without editing vendor code: wrap the control in `<div role="group" aria-label=…>` and query `within(getByRole("group", {name})).getByRole("textbox")`. Also, lucide's `Pencil` is exported only under the alias `Edit` (`icons.tsx`), so `icon="Pencil"` fails typecheck. **Why it matters:** These surprises come up in any form or test that uses these kit controls. **Where:** `client/src/app/repos/[repoId]/conventions/_components/ConventionCard/ConventionCard.tsx`
 

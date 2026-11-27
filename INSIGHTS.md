@@ -12,6 +12,9 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## Codebase Patterns
 <!-- Conventions and architectural decisions the code alone does not make obvious. -->
 
+### 2026-11-27 · Plans that only touch `.claude/**` cannot go to the `implementer` agent
+**What:** `implementer.md` forbids edits to `.claude/**`, so a plan for new agents or skills comes back BLOCKED from it. The four agents test-writer, architecture-reviewer, plan-verifier and doc-writer were written by the main session after the user approved the plan. Note also that README roadmap M6 has a *product* feature called "Plan Verifier", unrelated to the `plan-verifier` subagent. **Why it matters:** Route `.claude/**` plans to the main session from the start, and say which "plan verifier" you mean. **Where:** `.claude/agents/implementer.md` (Hard rules), `.claude/agents/README.md` ("Which agent or tool when")
+
 ### 2026-11-26 · `renderSkillBlock` exists twice (reviewer-core and client); change both together
 **What:** The skill format `### name\ndescription\n\nbody` is built by `renderSkillBlock` in `reviewer-core/src/prompt.ts`, which the run path uses, and by a mirror in `client/src/lib/skills.ts`, which the Preview tab and live token count use. The client has no `@devdigest/reviewer-core` alias. Each copy has a test pinning the exact string: `reviewer-core/test/skills.test.ts` and `client/src/lib/skills.test.ts`. **Why it matters:** Change one copy without the other and Preview stops matching what the agent receives, even though both test suites still pass. Update both functions and both tests. **Where:** the two files above
 
@@ -27,6 +30,9 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 ## Tool & Library Notes
 <!-- Dependency, tooling, and CI quirks. -->
 
+### 2026-11-27 · Agents added to `.claude/agents/` mid-session are not callable until the session restarts
+**What:** In this session neither `researcher` (staged earlier) nor the new `planner` showed up as Agent tool types: `Agent type 'planner' not found`. The workaround was `general-purpose` with a brief saying "act as the agent in `.claude/agents/<name>.md`". **Why it matters:** Live smoke tests of a new agent need a fresh session. Don't take a missing agent type as a broken frontmatter until you have restarted. **Where:** `.claude/agents/`
+
 ### 2026-11-26 · Worktree subagents start at a stale commit and need `npm ci` in reviewer-core before server typecheck
 **What:** All four `isolation: "worktree"` agents in M2 got a worktree at an older commit (`83ea0b6`), not the current `labs/lab-2` HEAD. Each had to fast-forward or reset before it started work. In a fresh worktree, server `pnpm typecheck` fails with "Cannot find module 'openai'/'zod'" until `npm ci` runs in `reviewer-core/`, because the path alias compiles reviewer-core sources, which resolve deps from its own `node_modules`. **Why it matters:** Put `git log -1` against the expected base, plus `cd reviewer-core && npm ci`, in every worktree brief. **Where:** `server/tsconfig.json` (`@devdigest/reviewer-core` path), `.claude/worktrees/`
 
@@ -41,3 +47,12 @@ Written via the `engineering-insights` skill — see `.claude/skills/engineering
 
 ## Open Questions
 <!-- Unresolved or unverified — not yet safe to act on. -->
+
+### 2026-11-27 · Subagent permission semantics from the docs, not yet verified here
+**What:** Per code.claude.com/docs/en/sub-agents:
+- a parent in `auto`, `acceptEdits`, `bypassPermissions` or `plan` mode overrides a subagent's `permissionMode`;
+- `memory:` auto-enables Read/Write/Edit;
+- `skills:` cannot preload a `disable-model-invocation` skill (e.g. `pr-self-review`);
+- hooks in `.claude/settings.json` also fire inside subagents.
+
+**Why it matters:** This is why the planner's read-only guarantee comes from `tools`/`disallowedTools` (Bash is limited only by its prompt), not from `permissionMode`. Confirm in a fresh session. **Where:** `.claude/agents/planner.md`
