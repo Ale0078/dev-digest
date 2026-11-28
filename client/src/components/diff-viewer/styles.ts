@@ -64,7 +64,41 @@ export const s = {
     color: "var(--text-primary)",
     paddingRight: 12,
   } satisfies CSSProperties,
+  groupWrap: { display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
+  groupHeader: {
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+    padding: "8px 12px",
+    border: "1px solid var(--border)",
+    borderRadius: 7,
+    background: "var(--bg-surface)",
+    color: "var(--text-primary)",
+    cursor: "pointer",
+    textAlign: "left",
+    font: "inherit",
+  } satisfies CSSProperties,
+  groupLabel: { fontSize: 13, fontWeight: 600 } satisfies CSSProperties,
+  groupSubtitle: { fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
+  groupHint: { fontSize: 12, color: "var(--text-muted)" } satisfies CSSProperties,
+  groupCount: { fontSize: 12, fontWeight: 600, color: "var(--crit)" } satisfies CSSProperties,
+  findingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    flexShrink: 0,
+  } satisfies CSSProperties,
+  sevWord: { fontSize: 11, fontWeight: 600, paddingRight: 12, flexShrink: 0 } satisfies CSSProperties,
 } as const;
+
+/** Colour of a group's marker square. */
+export function groupSquareStyle(color: string): CSSProperties {
+  return { width: 10, height: 10, borderRadius: 2, background: color, flexShrink: 0 };
+}
 
 /** Chevron rotates 90deg when the file card is open. */
 export function chevronFor(open: boolean): CSSProperties {

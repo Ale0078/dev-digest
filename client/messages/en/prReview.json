@@ -68,7 +68,28 @@
     "largeBody": "Consider splitting it into smaller, focused PRs for easier review:",
     "filesCount": "{count} files",
     "findingLines": "{count} finding-lines",
-    "groupedByRole": "Smart Diff · grouped by role"
+    "groupedByRole": "Smart Diff · grouped by role",
+    "testsLabel": "Tests",
+    "docsLabel": "Docs",
+    "coreSubtitle": "Application logic",
+    "testsSubtitle": "Test files",
+    "wiringSubtitle": "Config and entry points",
+    "docsSubtitle": "Documentation",
+    "boilerplateSubtitle": "Lock files and generated code",
+    "smartOrder": "Smart order",
+    "originalOrder": "Original order",
+    "noReviewYet": "Review not run yet",
+    "filesWithFindings": "{count} files with findings",
+    "hasFindings": "Has findings",
+    "unplacedFindings": "Findings not on a diff line ({count})",
+    "severityLine": {
+      "CRITICAL": "blocker",
+      "WARNING": "warning",
+      "SUGGESTION": "suggestion"
+    },
+    "filesChanged": "Files changed · {count} files",
+    "showAnnotations": "Show comments and findings",
+    "hideAnnotations": "Hide comments and findings"
   },
   "list": {
     "breadcrumb": "Pull Requests",

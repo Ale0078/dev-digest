@@ -4,7 +4,8 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Icon } from "@devdigest/ui";
+import { Icon, SEV } from "@devdigest/ui";
+import type { FindingRecord } from "@devdigest/shared";
 import type { PrFile } from "@/lib/types";
 import { AUTO_EXPAND_MAX_LINES } from "../constants";
 import { parsePatch, type Line } from "../helpers";
@@ -15,9 +16,13 @@ import {
   type CommentThread,
   type DiffCommentApi,
 } from "../comments";
+import { partitionFindings, type DiffFindingApi } from "../findings";
 import { s, chevronFor } from "../styles";
 import { CodeLine } from "../CodeLine";
 import { OutdatedComments } from "../OutdatedComments";
+import { UnplacedFindings } from "../UnplacedFindings";
+
+const NO_FINDINGS: FindingRecord[] = [];
 
 /** Threads anchored to a given parsed line (RIGHT=new, LEFT=old). */
 function threadsForLine(ln: Line, matched: Map<string, CommentThread[]>): CommentThread[] {
@@ -30,8 +35,31 @@ function threadsForLine(ln: Line, matched: Map<string, CommentThread[]>): Commen
   return out;
 }
 
-export function FileCard({ file, commenting }: { file: PrFile; commenting?: DiffCommentApi }) {
+/** Findings anchored to a parsed line (new side only). */
+function findingsForLine(ln: Line, matched: Map<string, FindingRecord[]>): FindingRecord[] {
+  if (matched.size === 0) return NO_FINDINGS;
+  const out: FindingRecord[] = [];
+  for (const key of keysForLine(ln)) {
+    const list = matched.get(key);
+    if (list) out.push(...list);
+  }
+  return out;
+}
+
+export function FileCard({
+  file,
+  commenting,
+  findingApi,
+  fileFindings = NO_FINDINGS,
+}: {
+  file: PrFile;
+  commenting?: DiffCommentApi;
+  findingApi?: DiffFindingApi;
+  /** This file's findings (from the latest review per agent). */
+  fileFindings?: FindingRecord[];
+}) {
   const t = useTranslations("shell");
+  const tp = useTranslations("prReview");
   const [open, setOpen] = React.useState(
     (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
   );
@@ -47,6 +75,12 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
     for (const ln of lines) for (const k of keysForLine(ln)) renderedKeys.add(k);
     return partitionThreads(fileThreads, renderedKeys);
   }, [comments, file.path, lines]);
+
+  const { matched: matchedFindings, unplaced } = React.useMemo(() => {
+    const renderedKeys = new Set<string>();
+    for (const ln of lines) for (const k of keysForLine(ln)) renderedKeys.add(k);
+    return partitionFindings(fileFindings, renderedKeys);
+  }, [fileFindings, lines]);
 
   const commentCount = commenting
     ? commenting.comments.filter((c) => c.path === file.path).length
@@ -64,6 +98,13 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
           <span style={s.addText}>+{file.additions}</span>{" "}
           <span style={s.delText}>−{file.deletions}</span>
         </span>
+        {fileFindings.length > 0 && (
+          <span
+            role="img"
+            aria-label={tp("smartDiff.hasFindings")}
+            style={{ ...s.findingDot, background: SEV.CRITICAL.c }}
+          />
+        )}
         {commentCount > 0 && (
           <span
             style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}
@@ -85,10 +126,15 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
                 path={file.path}
                 threads={threadsForLine(ln, matched)}
                 commenting={commenting}
+                findings={findingsForLine(ln, matchedFindings)}
+                findingApi={findingApi}
               />
             ))
           )}
           {commenting && commenting.showComments && <OutdatedComments threads={outdated} />}
+          {findingApi && findingApi.show && (
+            <UnplacedFindings findings={unplaced} renderFinding={findingApi.renderFinding} />
+          )}
         </div>
       )}
     </div>

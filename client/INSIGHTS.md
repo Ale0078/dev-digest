@@ -25,6 +25,9 @@ Supersedes: 2026-11-21 · `position: absolute` popovers get clipped in the PR ta
 ## Codebase Patterns
 <!-- Conventions and architectural decisions the code alone does not make obvious. -->
 
+### 2026-11-28 · A new `useTranslations(ns)` in a shared component makes older tests log `MISSING_MESSAGE` but still pass
+**What:** Smart Diff made `diff-viewer` (`FileCard`, `CodeLine`, `GroupSection`) read `prReview.smartDiff.*` in addition to `shell`. `src/test/smoke.test.tsx` only provided `shell` messages, so it kept passing while logging `MISSING_MESSAGE` errors; it was fixed by adding `prReview` to its provider messages. Also, `diff-viewer` stays app-agnostic: finding cards are injected via the `DiffFindingApi.renderFinding` render prop from `DiffTab`, never by importing `FindingCard` from `src/app`. **Why it matters:** After adding a namespace to a shared component, grep its existing tests for `NextIntlClientProvider` messages and extend them — a green run is not proof here. **Where:** `client/src/components/diff-viewer/`, `client/src/test/smoke.test.tsx`
+
 ### 2026-11-27 · `FEATURE_MODELS` has a hand-written client mirror that `diff -r` of vendor/shared doesn't check
 **What:** `client/src/lib/feature-models.ts` duplicates the `FEATURE_MODELS` registry from `vendor/shared/contracts/platform.ts`, because the client doesn't import runtime values from the vendored copy. M3 changed the `review_intent` default in both. Also, Settings → Models (`SettingsModels.tsx` `setModel`) always saves `provider:'openrouter'`, so any non-OpenRouter default is unreachable after the first pick. **Why it matters:** A default or new feature key changed only in the contracts silently diverges in the UI. Change both files together. **Where:** `client/src/lib/feature-models.ts`, `server/src/vendor/shared/contracts/platform.ts`
 
