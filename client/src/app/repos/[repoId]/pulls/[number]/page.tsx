@@ -19,6 +19,7 @@ import { usePullDetail, usePulls } from "../../../../../lib/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePrReviews, useCancelRun, usePrActiveRuns, usePrRuns, useDeleteRun } from "../../../../../lib/hooks/reviews";
 import { prIntentKey } from "../../../../../lib/hooks/intent";
+import { smartDiffKey } from "../../../../../lib/hooks/smart-diff";
 import { useActiveRepo, useRepoNotFound } from "../../../../../lib/repo-context";
 import { ApiError } from "../../../../../lib/api";
 import { githubPrUrl } from "../../../../../lib/github-urls";
@@ -58,6 +59,9 @@ export default function PRDetailPage() {
     if (prId) qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
   };
   // The scope filter ignores a stale intent, so the card's staleness is re-read when a run settles.
+  const invalidateSmartDiff = () => {
+    if (prId) qc.invalidateQueries({ queryKey: smartDiffKey(prId) });
+  };
   const invalidateIntent = () => {
     if (prId) qc.invalidateQueries({ queryKey: prIntentKey(prId) });
   };
@@ -162,6 +166,7 @@ export default function PRDetailPage() {
               invalidateActiveRuns();
               invalidateRunHistory();
               invalidateIntent();
+              invalidateSmartDiff();
               refetchReviews();
             }}
           />
@@ -173,6 +178,8 @@ export default function PRDetailPage() {
             filesCount={pr.files_count}
             files={pr.files}
             canComment={pr.status === "open"}
+            repoFullName={repoFullName}
+            headSha={pr.head_sha}
           />
         )}
       </div>

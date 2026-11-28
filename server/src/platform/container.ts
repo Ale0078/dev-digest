@@ -36,6 +36,8 @@ import { readContainedFile } from './contained-read.js';
 import { IntentRepository } from '../modules/intent/repository.js';
 import { IntentService } from '../modules/intent/service.js';
 import type { LinkFetcher } from '../modules/intent/types.js';
+import { SmartDiffRepository } from '../modules/smart-diff/repository.js';
+import { SmartDiffService } from '../modules/smart-diff/service.js';
 import { loadDiff } from '../modules/reviews/diff-loader.js';
 import { resolveFeatureModel } from '../modules/settings/feature-models.js';
 
@@ -90,6 +92,7 @@ export class Container {
   private _priceBook?: PriceBook;
   private _linkFetcher?: LinkFetcher;
   private _intentService?: IntentService;
+  private _smartDiffService?: SmartDiffService;
 
   constructor(config: AppConfig, db: Db, private overrides: ContainerOverrides = {}) {
     this.config = config;
@@ -182,6 +185,12 @@ export class Container {
       tokenizer: this.tokenizer,
     });
     return this._intentService;
+  }
+
+  /** Smart diff read model (role-grouped files + finding lines; no LLM). */
+  get smartDiffService(): SmartDiffService {
+    this._smartDiffService ??= new SmartDiffService(new SmartDiffRepository(this.db));
+    return this._smartDiffService;
   }
 
   /**

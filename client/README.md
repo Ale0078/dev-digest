@@ -34,7 +34,7 @@ flowchart TD
   SETTINGS["/settings/:section<br/>API keys · models"]
 
   PULLS -->|"GET /repos/:id/pulls · /repos/:id/index-state"| API
-  PR -->|"GET /pulls/:id · /reviews · /pulls/:id/comments<br/>POST /pulls/:id/review · /findings/:id/(accept|dismiss)"| API
+  PR -->|"GET /pulls/:id · /reviews · /pulls/:id/comments · /pulls/:id/smart-diff<br/>POST /pulls/:id/review · /findings/:id/(accept|dismiss)"| API
   SKILLS -->|"GET/POST /skills · PUT/DELETE /skills/:id<br/>POST /skills/import/preview (multipart) · /skills/token-count"| API
   SKILL -->|"GET /skills/:id · /versions · /stats<br/>POST /skills/:id/versions/:v/restore"| API
   AGENTS -->|"/agents · /agents/:id · GET/POST /agents/:id/skills"| API
